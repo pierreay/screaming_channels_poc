@@ -24,6 +24,6 @@
         "hackrf_gain": 0,
         "hackrf_gain_if": 25,
         "hackrf_gain_bb": 27,
-        "plutosdr_gain": 64
+        "plutosdr_gain": 35
     }
 }

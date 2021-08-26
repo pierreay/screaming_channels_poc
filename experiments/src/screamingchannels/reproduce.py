@@ -304,7 +304,7 @@ def collect(config, target_path, name, average_out, plot, max_power, raw):
     cfg_dict["collection"].setdefault(u'hackrf_gain', 0)
     cfg_dict["collection"].setdefault(u'hackrf_gain_bb', 44)
     cfg_dict["collection"].setdefault(u'hackrf_gain_if', 40)
-    cfg_dict["collection"].setdefault(u'plutosdr_gain', 64)
+    cfg_dict["collection"].setdefault(u'plutosdr_gain', 35)
     cfg_dict["collection"].setdefault(u'usrp_gain', 40)
     cfg_dict["collection"].setdefault(u'keep_all', False)
     cfg_dict["collection"].setdefault(u'channel', 0)
@@ -554,7 +554,7 @@ def eddystone_unlock_collect(config, target_path, name, average_out, plot, max_p
     cfg_dict["collection"].setdefault(u'hackrf_gain', 0)
     cfg_dict["collection"].setdefault(u'hackrf_gain_bb', 44)
     cfg_dict["collection"].setdefault(u'hackrf_gain_if', 40)
-    cfg_dict["collection"].setdefault(u'plutosdr_gain', 64)
+    cfg_dict["collection"].setdefault(u'plutosdr_gain', 35)
     cfg_dict["collection"].setdefault(u'usrp_gain', 40)
     cfg_dict["collection"].setdefault(u'keep_all', False)
     cfg_dict["collection"].setdefault(u'channel', 0)
@@ -732,7 +732,7 @@ def _open_serial_port():
 class GNUradio(gr.top_block):
     """GNUradio capture from SDR to file."""
     def __init__(self, frequency=2.464e9, sampling_rate=5e6, conventional=False,
-                 usrp_gain=40, hackrf_gain=0, hackrf_gain_if=40, hackrf_gain_bb=44, plutosdr_gain=64):
+                 usrp_gain=40, hackrf_gain=0, hackrf_gain_if=40, hackrf_gain_bb=44, plutosdr_gain=35):
         gr.top_block.__init__(self, "Top Block")
 
         if RADIO in (Radio.USRP, Radio.USRP_mini, Radio.USRP_B210):
