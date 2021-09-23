@@ -283,9 +283,11 @@ def save_raw(capture_file, target_path, index, name):
               help="Plot the results of trace collection.")
 @click.option("--max-power/--no-max-power", default=False, show_default=True,
               help="Set the output power of the device to its maximum.")
+@click.option("--power", default=0, show_default=True,
+              help="Set the output power of the device.")
 @click.option("--raw/--no-raw", default=False, show_default=True,
               help="Save the raw IQ data.")
-def collect(config, target_path, name, average_out, plot, max_power, raw):
+def collect(config, target_path, name, average_out, plot, max_power, power, raw):
     """
     Collect traces for an attack.
 
@@ -390,6 +392,11 @@ def collect(config, target_path, name, average_out, plot, max_power, raw):
         if max_power:
             l.debug('Setting power to the  maximum')
             ser.write(b'p0')
+            ser.readline()
+            ser.readline()
+        else:
+            l.debug('Setting power to ' + str(power))
+            ser.write(bytes('p' + str(power)))
             ser.readline()
             ser.readline()
 
