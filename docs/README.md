@@ -390,7 +390,7 @@ hackrf (HackRF). Follow the Gnuradio guidelines and chose the installation
 method you prefer. For example, using the packages:
 ```
 apt install gnuradio # Version 3.7, alternatively install from source.
-apt install gr-osmosdr
+apt install gr-osmosdr gr-iio
 apt install hackrf
 apt install bluez
 pip3 install gatt==0.2.7 pyzmq==17.1.2
