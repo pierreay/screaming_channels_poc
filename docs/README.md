@@ -446,7 +446,7 @@ Clone the repository.
 ```
 <!--git clone https://github.com/eurecom-s3/python-hel-->
 git clone https://github.com/giocamurati/python_hel.git
-cd python-hel
+cd python_hel
 ```
 
 Compile and install the library.
@@ -471,7 +471,7 @@ apt install ninja-build
 ```
 
 ```
-cd python-hel
+cd python_hel
 meson --buildtype release build -D aes_type=aes_ni
 # meson --buildtype release build2 -D aes_type=aes_simple
 cd build
