@@ -22,7 +22,7 @@
         "trigger_rising": true,
         "trigger_offset": 100e-6,
         "signal_length": 300e-6,
-        "template_name": "templates/tiny_anechoic_5m.npy",
+        "template_name": null,
         "min_correlation": 0.00
     }
 }
