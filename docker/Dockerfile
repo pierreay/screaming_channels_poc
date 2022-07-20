@@ -15,9 +15,9 @@ RUN apt-get update && apt-get install -yq \
 # Install screaming
 RUN mkdir /home/screaming \
      && cd /home/screaming \
-     && git clone https://github.com/eurecom-s3/screaming_channels.git \
+     && git clone https://github.com/pierreay/screaming_channels.git \
      && cd screaming_channels \
-     && git checkout ches20 \
+     && git checkout dev \
      && cd /home/screaming/screaming_channels/experiments/src/ \
      && python2 setup.py develop
 
