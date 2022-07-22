@@ -287,7 +287,7 @@ def plot_results(config, data, trigger, trigger_average, starts, traces, plot_fi
 
     plt.subplot(4, 1, 2)
     plt.specgram(
-        data, NFFT=128, Fs=config.sampling_rate, Fc=0, detrend=mlab.detrend_none,
+        data, NFFT=256, Fs=config.sampling_rate, Fc=0, detrend=mlab.detrend_none,
         window=mlab.window_hanning, noverlap=127, cmap=None, xextent=None,
         pad_to=None, sides='default', scale_by_freq=None, mode='default',
         scale='default')
