@@ -112,7 +112,7 @@ def find_starts(config, data):
 # The code below contains a few hacks to deal with all possible errors we
 # encountered with different radios and setups. It is not very clean but it is
 # quite stable.
-def extract(capture_file, config, average_file_name=None, plot=False):
+def extract(capture_file, config, average_file_name=None, plot=False, plot_file_name=None):
     """
     Post-process a GNUradio capture to get a clean and well-aligned trace.
 
@@ -243,7 +243,7 @@ def extract(capture_file, config, average_file_name=None, plot=False):
             np.save(average_file_name, avg)
 
         if plot:
-            plot_results(config, data, trigger, trigger_avg, trace_starts, traces)
+            plot_results(config, data, trigger, trigger_avg, trace_starts, traces, plot_file_name)
 
         std = np.std(traces,axis=0)
 
@@ -267,7 +267,7 @@ def extract(capture_file, config, average_file_name=None, plot=False):
         template = np.load(config.template_name)
         return np.zeros(len(template))
 
-def plot_results(config, data, trigger, trigger_average, starts, traces):
+def plot_results(config, data, trigger, trigger_average, starts, traces, plot_file_name=None):
     plt.subplots_adjust(hspace = 0.6) 
     plt.subplot(4, 1, 1)
 
@@ -319,7 +319,11 @@ def plot_results(config, data, trigger, trigger_average, starts, traces):
         plt.xlabel("time [s]")
         plt.ylabel("normalized amplitude")
 
-    plt.show()
+    if plot_file_name:
+        plt.savefig(plot_file_name, dpi=300)
+        plt.close()
+    else:
+        plt.show()
 
 if __name__ == "__main__":
     extract(True)

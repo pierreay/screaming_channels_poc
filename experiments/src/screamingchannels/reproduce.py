@@ -285,13 +285,15 @@ def save_raw(capture_file, target_path, index, name):
               help="File to write the average to (i.e. the template candidate).")
 @click.option("--plot/--no-plot", default=False, show_default=True,
               help="Plot the results of trace collection.")
+@click.option("--plot-out", type=click.Path(dir_okay=False),
+              help="File to write the plot to (instead of showing it dynamically).")
 @click.option("--max-power/--no-max-power", default=False, show_default=True,
               help="Set the output power of the device to its maximum.")
 @click.option("--power", default=0, show_default=True,
               help="Set the output power of the device.")
 @click.option("--raw/--no-raw", default=False, show_default=True,
               help="Save the raw IQ data.")
-def collect(config, target_path, name, average_out, plot, max_power, power, raw):
+def collect(config, target_path, name, average_out, plot, plot_out, max_power, power, raw):
     """
     Collect traces for an attack.
 
@@ -487,7 +489,7 @@ def collect(config, target_path, name, average_out, plot, max_power, power, raw)
                 gnuradio.stop()
                 gnuradio.wait()
 
-                trace = analyze.extract(OUTFILE, collection_config, average_out, plot)
+                trace = analyze.extract(OUTFILE, collection_config, average_out, plot, plot_out)
                 
                 if RADIO == Radio.USRP_B210_MIMO:
                     trace_2 = analyze.extract(OUTFILE+"_2", collection_config, average_out, plot)
