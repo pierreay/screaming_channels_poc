@@ -1,5 +1,4 @@
-#!/usr/bin/python2
-# The collection script has to use Python 2 for GNUradio, so keep using it here.
+#!/usr/bin/python3
 
 import click
 import numpy as np
@@ -124,7 +123,7 @@ def cli(template_dir_1, template_dir_2, template_dir_3, plot, align, remove_dc, 
         MEAN_TRACE_3 = np.load(path.join(template_dir_3, "PROFILE_MEAN_TRACE.npy"))
 
     NUM_KEY_BYTES = num_key_bytes #min(len(POIS_1), len(POIS_2))
-    CLASSES = range(0, len(MEANS_1[0]))
+    CLASSES = list(range(0, len(MEANS_1[0])))
     if num_pois == 0:
         NUM_POIS = min(len(POIS_1[0]), len(POIS_2[0]))
     else:
@@ -177,19 +176,19 @@ def compare():
     if np.shape(MEANS_1[0,:,0]) == np.shape(MEANS_2[0,:,0]):
         correlation_templates = np.zeros((NUM_KEY_BYTES, NUM_POIS))
         p_templates = np.zeros((NUM_KEY_BYTES, NUM_POIS))
-        print "Correlation between templates"
+        print("Correlation between templates")
         for poi in range(NUM_POIS):
             for i in range(NUM_KEY_BYTES):
                 #cor = correlate(MEANS_1[i,:,poi], MEANS_2[i,:,poi])
                 r, p = pearsonr(MEANS_1[i,:,poi], MEANS_2[i,:,poi])
                 correlation_templates[i, poi] = r
                 p_templates[i, poi] = p
-                print "POI %2d, BYTE %2d, COR %.2f, -LOG10(p) %.2f"%(poi, i, r, -np.log10(p))
+                print("POI %2d, BYTE %2d, COR %.2f, -LOG10(p) %.2f"%(poi, i, r, -np.log10(p)))
 
 
     # correlation among bytes
-    print ""
-    print "Correlation among models of subkeys, for each template"
+    print("")
+    print("Correlation among models of subkeys, for each template")
     correlation_bytes_1 = np.zeros((NUM_KEY_BYTES, NUM_KEY_BYTES, NUM_POIS))
     correlation_bytes_2 = np.zeros((NUM_KEY_BYTES, NUM_KEY_BYTES, NUM_POIS))
     for poi in range(NUM_POIS):
@@ -199,12 +198,12 @@ def compare():
                 cor2 = correlate(MEANS_2[i,:,poi], MEANS_2[j,:,poi])
                 correlation_bytes_1[i, j, poi] = cor1
                 correlation_bytes_2[i, j, poi] = cor2
-                print "POI %2d, BYTE A %2d, BYTE B %2d, COR %.2f %.2f"%(poi, i, j,
-                        cor1, cor2)
+                print("POI %2d, BYTE A %2d, BYTE B %2d, COR %.2f %.2f"%(poi, i, j,
+                        cor1, cor2))
 
 
     if PLOT:
-        for spine in plt.gca().spines.values():
+        for spine in list(plt.gca().spines.values()):
                 spine.set_visible(False)
       
         num_plots = 3
