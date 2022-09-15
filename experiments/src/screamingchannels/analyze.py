@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 import numpy as np
 
 from matplotlib import pyplot as plt
@@ -80,8 +80,8 @@ def find_starts(config, data):
     minimum = np.min(trigger[start_idx:])
     middle = (np.max(trigger[start_idx:]) - min(trigger[start_idx:])) / 2
     if average < 1.1*middle:
-        print ""
-        print "Adjusting average to avg + (max - avg) / 2"
+        print("")
+        print("Adjusting average to avg + (max - avg) / 2")
         average = average + (maximum - average) / 2
     offset = -int(config.trigger_offset * config.sampling_rate)
 
@@ -127,7 +127,7 @@ def extract(capture_file, config, average_file_name=None, plot=False):
 
         # assert len(data) != 0, "ERROR, empty data just after measuring"
         if len(data) == 0:
-            print "Warning! empty data, replacing with zeros"
+            print("Warning! empty data, replacing with zeros")
             template = np.load(config.template_name)
             return np.zeros(len(template))
 
@@ -145,7 +145,7 @@ def extract(capture_file, config, average_file_name=None, plot=False):
 
         # assert len(data) != 0, "ERROR, empty data after drop_start"
         if len(data) == 0:
-           print "Warning! empty data after drop start, replacing with zeros"
+           print("Warning! empty data after drop start, replacing with zeros")
            template = np.load(config.template_name)
            return np.zeros(len(template))
 
@@ -247,11 +247,11 @@ def extract(capture_file, config, average_file_name=None, plot=False):
 
         std = np.std(traces,axis=0)
 
-        print "Extracted "
-        print "Number = ",len(traces)
-        print "avg[Max(std)] = %.2E"%avg[std.argmax()]
-        print "Max(u) = Max(std) = %.2E"%(max(std))
-        print "Max(u_rel) = %.2E"%(100*max(std)/avg[std.argmax()]),"%"
+        print("Extracted ")
+        print("Number = ",len(traces))
+        print("avg[Max(std)] = %.2E"%avg[std.argmax()])
+        print("Max(u) = Max(std) = %.2E"%(max(std)))
+        print("Max(u_rel) = %.2E"%(100*max(std)/avg[std.argmax()]),"%")
 
         # plt.plot(avg, 'r')
         # plt.plot(template, 'b')
@@ -263,7 +263,7 @@ def extract(capture_file, config, average_file_name=None, plot=False):
             return avg
 
     except:
-        print "Error, returning zeros"
+        print("Error, returning zeros")
         template = np.load(config.template_name)
         return np.zeros(len(template))
 
@@ -302,7 +302,7 @@ def plot_results(config, data, trigger, trigger_average, starts, traces):
         # sides='default', scale_by_freq=None, return_line=None)
 
     if(len(traces) == 0):
-        print "WARNING: no encryption was extracted"
+        print("WARNING: no encryption was extracted")
     else:
         t = np.linspace(0,len(traces[0]) / config.sampling_rate, len(traces[0]))
         plt.subplot(4, 1, 3)
