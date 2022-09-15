@@ -356,7 +356,7 @@ def collect(config, target_path, name, average_out, plot, max_power, raw):
                     for _trace in range(1 if firmware_config.fixed_plaintext else num_points)]
     
     with open(path.join(target_path, 'pt_%s.txt' % name), 'w') as f:
-        f.write('\n'.join(p.encode('hex') for p in plaintexts))
+        f.write('\n'.join(binascii.hexlify(p) for p in plaintexts))
 
     # Generate the key(s)
     if firmware_mode.have_keys:
@@ -366,7 +366,7 @@ def collect(config, target_path, name, average_out, plot, max_power, raw):
             keys = [os.urandom(16)
                     for _key in range(1 if firmware_config.fixed_key else num_points)]
         with open(path.join(target_path, 'key_%s.txt' % name), 'w') as f:
-            f.write('\n'.join(k.encode('hex') for k in keys))
+            f.write('\n'.join(binascii.hexlify(k) for k in keys))
 
     # If requested, reset target
     if YKUSH_PORT != 0:
@@ -634,7 +634,7 @@ def eddystone_unlock_collect(config, target_path, name, average_out, plot, max_p
     
             if trace.any():
                 np.save(os.path.join(target_path,"avg_%s_%d.npy"%(name,cnt)),trace)
-                f.write(challenge.encode('hex')+"\n")
+                f.write(binascii.hexlify(challenge)+"\n")
                 cnt += 1
 
     f.close()
