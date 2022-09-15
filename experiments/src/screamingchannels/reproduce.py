@@ -14,6 +14,7 @@ import logging
 from Crypto.Cipher import AES
 import zmq
 import subprocess
+import binascii
 
 from gnuradio import blocks, gr, uhd, iio
 import osmosdr
@@ -586,7 +587,7 @@ def eddystone_unlock_collect(config, target_path, name, average_out, plot, max_p
     print(new_key)
   
     with open(path.join(target_path, 'key_%s.txt' % name), 'w') as f:
-        f.write(new_key.encode('hex')+"\n")
+        f.write(binascii.hexlify(new_key)+"\n")
  
     # The attacker:
     # 1. Connect to the device
