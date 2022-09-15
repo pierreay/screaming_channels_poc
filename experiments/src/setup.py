@@ -22,7 +22,7 @@ setup(
         "pyts==0.12.0",
         "llvmlite==0.39.1",
         "numba==0.56.2",
-        "statsmodels==0.13.2"1
+        "statsmodels==0.13.2",
         "pandas==1.4.4",
         "scikit-learn==1.1.2",
         "future==0.18.2",
