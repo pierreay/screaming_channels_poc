@@ -1,6 +1,5 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 
-# We need to use Python 2 for GNUradio.
 
 import click
 import collections
@@ -21,7 +20,7 @@ import osmosdr
 
 import numpy as np
 
-import analyze
+from . import analyze
 
 logging.basicConfig()
 l = logging.getLogger('reproduce')
@@ -243,7 +242,7 @@ def _send_parameter(ser, command, param):
     x = ser.readline()
     # print "received: ",x
     if len(x) == 0:
-        print "nothing received on timeout, ignoring error"
+        print("nothing received on timeout, ignoring error")
         return 
     check = ''.join(chr(int(word)) for word in x.split(' '))
     # -- create check like this instead for ESP32:
@@ -251,8 +250,8 @@ def _send_parameter(ser, command, param):
     #response = [ a for a in response.split(' ') if a.isdigit() ]
     #check = ''.join(chr(int(word)) for word in response)
     if check != param:
-        print "ERROR\n%s\n%s" % (_encode_for_device(param),
-                                 _encode_for_device(check))
+        print(("ERROR\n%s\n%s" % (_encode_for_device(param),
+                                 _encode_for_device(check))))
         ser.write(b'q')
         sys.exit(1)
     l.debug('Check done\n')
@@ -295,19 +294,19 @@ def collect(config, target_path, name, average_out, plot, max_power, raw):
     """
     # NO-OP defaults for mode dependent config options for backwards compatibility
     cfg_dict = json.load(config)
-    cfg_dict["firmware"].setdefault(u'conventional', False)
-    cfg_dict["firmware"].setdefault(u'mask_mode', 0)
-    cfg_dict["firmware"].setdefault(u'slow_mode_sleep_time', 0.001)
-    cfg_dict["firmware"].setdefault(u'fixed_vs_fixed', False)
-    cfg_dict["firmware"].setdefault(u'fixed_plaintext', False)
-    cfg_dict["collection"].setdefault(u'traces_per_point_multiplier', 1.2)
-    cfg_dict["collection"].setdefault(u'hackrf_gain', 0)
-    cfg_dict["collection"].setdefault(u'hackrf_gain_bb', 44)
-    cfg_dict["collection"].setdefault(u'hackrf_gain_if', 40)
-    cfg_dict["collection"].setdefault(u'plutosdr_gain', 64)
-    cfg_dict["collection"].setdefault(u'usrp_gain', 40)
-    cfg_dict["collection"].setdefault(u'keep_all', False)
-    cfg_dict["collection"].setdefault(u'channel', 0)
+    cfg_dict["firmware"].setdefault('conventional', False)
+    cfg_dict["firmware"].setdefault('mask_mode', 0)
+    cfg_dict["firmware"].setdefault('slow_mode_sleep_time', 0.001)
+    cfg_dict["firmware"].setdefault('fixed_vs_fixed', False)
+    cfg_dict["firmware"].setdefault('fixed_plaintext', False)
+    cfg_dict["collection"].setdefault('traces_per_point_multiplier', 1.2)
+    cfg_dict["collection"].setdefault('hackrf_gain', 0)
+    cfg_dict["collection"].setdefault('hackrf_gain_bb', 44)
+    cfg_dict["collection"].setdefault('hackrf_gain_if', 40)
+    cfg_dict["collection"].setdefault('plutosdr_gain', 64)
+    cfg_dict["collection"].setdefault('usrp_gain', 40)
+    cfg_dict["collection"].setdefault('keep_all', False)
+    cfg_dict["collection"].setdefault('channel', 0)
 
     collection_config = CollectionConfig(**cfg_dict["collection"])
     firmware_config = FirmwareConfig(**cfg_dict["firmware"])
@@ -379,7 +378,7 @@ def collect(config, target_path, name, average_out, plot, max_power, raw):
 
     with _open_serial_port() as ser:
         if YKUSH_PORT != 0:
-            print ser.readline()
+            print((ser.readline()))
 
         # tmp increase power
         #l.debug('POWERPOWER')
@@ -398,25 +397,25 @@ def collect(config, target_path, name, average_out, plot, max_power, raw):
         else:
             l.debug('Selecting channel')
             ser.write(b'a')
-            print ser.readline()
+            print((ser.readline()))
             ser.write(b'%02d\n'%collection_config.channel)
-            print ser.readline()
+            print((ser.readline()))
             if firmware_config.modulate:
                 l.debug('Starting modulated wave')
                 ser.write(b'o')     # start modulated wave
-                print ser.readline()
+                print((ser.readline()))
             else:
                 l.debug('Starting continuous wave')
                 ser.write(b'c')     # start continuous wave
 
         l.debug('Entering test mode')
         ser.write(firmware_mode.mode_command) # enter test mode
-        print ser.readline()
+        print((ser.readline()))
 
         if firmware_mode.repetition_command:
             l.debug('Setting trace repitions')
             ser.write('n%d\r\n' % num_traces_per_point)
-            print ser.readline()
+            print((ser.readline()))
 
         if firmware_mode.have_keys and firmware_config.fixed_key:
             # The key never changes, so we can just set it once and for all.
@@ -429,7 +428,7 @@ def collect(config, target_path, name, average_out, plot, max_power, raw):
         if firmware_config.mode == 'maskaes' or firmware_config.mode == 'maskaes_slow':
             l.debug('Setting masking mode to %d', firmware_config.mask_mode)
             ser.write('%d\r\n' % firmware_config.mask_mode)
-            print ser.readline()
+            print((ser.readline()))
 
 
         l.debug('Starting GNUradio')
@@ -443,7 +442,7 @@ def collect(config, target_path, name, average_out, plot, max_power, raw):
                             collection_config.plutosdr_gain)
         # with click.progressbar(plaintexts) as bar:
             # for index, plaintext in enumerate(bar):
-        with click.progressbar(range(num_points)) as bar:
+        with click.progressbar(list(range(num_points))) as bar:
             # for index, plaintext in enumerate(bar):
             for index in bar:
                 if firmware_mode.have_keys and not firmware_config.fixed_key:
@@ -519,7 +518,7 @@ def collect(config, target_path, name, average_out, plot, max_power, raw):
                 gnuradio.reset_trace()
 
         ser.write(b'q')     # quit tiny_aes mode
-        print ser.readline()
+        print((ser.readline()))
         ser.write(b'e')     # turn off continuous wave
 
 @cli.command()
@@ -545,19 +544,19 @@ def eddystone_unlock_collect(config, target_path, name, average_out, plot, max_p
     """
     # NO-OP defaults for mode dependent config options for backwards compatibility
     cfg_dict = json.load(config)
-    cfg_dict["firmware"].setdefault(u'conventional', False)
-    cfg_dict["firmware"].setdefault(u'mask_mode', 0)
-    cfg_dict["firmware"].setdefault(u'slow_mode_sleep_time', 0.001)
-    cfg_dict["firmware"].setdefault(u'fixed_vs_fixed', False)
-    cfg_dict["firmware"].setdefault(u'fixed_plaintext', False)
-    cfg_dict["collection"].setdefault(u'traces_per_point_multiplier', 1.2)
-    cfg_dict["collection"].setdefault(u'hackrf_gain', 0)
-    cfg_dict["collection"].setdefault(u'hackrf_gain_bb', 44)
-    cfg_dict["collection"].setdefault(u'hackrf_gain_if', 40)
-    cfg_dict["collection"].setdefault(u'plutosdr_gain', 64)
-    cfg_dict["collection"].setdefault(u'usrp_gain', 40)
-    cfg_dict["collection"].setdefault(u'keep_all', False)
-    cfg_dict["collection"].setdefault(u'channel', 0)
+    cfg_dict["firmware"].setdefault('conventional', False)
+    cfg_dict["firmware"].setdefault('mask_mode', 0)
+    cfg_dict["firmware"].setdefault('slow_mode_sleep_time', 0.001)
+    cfg_dict["firmware"].setdefault('fixed_vs_fixed', False)
+    cfg_dict["firmware"].setdefault('fixed_plaintext', False)
+    cfg_dict["collection"].setdefault('traces_per_point_multiplier', 1.2)
+    cfg_dict["collection"].setdefault('hackrf_gain', 0)
+    cfg_dict["collection"].setdefault('hackrf_gain_bb', 44)
+    cfg_dict["collection"].setdefault('hackrf_gain_if', 40)
+    cfg_dict["collection"].setdefault('plutosdr_gain', 64)
+    cfg_dict["collection"].setdefault('usrp_gain', 40)
+    cfg_dict["collection"].setdefault('keep_all', False)
+    cfg_dict["collection"].setdefault('channel', 0)
 
     collection_config = CollectionConfig(**cfg_dict["collection"])
     firmware_config = FirmwareConfig(**cfg_dict["firmware"])
@@ -577,7 +576,7 @@ def eddystone_unlock_collect(config, target_path, name, average_out, plot, max_p
     # TODO: install eddystone in a known path
     subprocess.Popen(["python3", "./src/screamingchannels/eddystone.py"])
 
-    print socket.recv()
+    print((socket.recv()))
 
     # Simulate the legitimate user:
     # 1. Generate a random key
@@ -594,7 +593,7 @@ def eddystone_unlock_collect(config, target_path, name, average_out, plot, max_p
     # 2. Read the unlock characteristic to get the challenge and trigger
     #    encryptions (with known plaintext) that you collect with gnuradio.
     socket.send(b'reconnect')
-    print(socket.recv())
+    print((socket.recv()))
  
     # number of points
     num_points = int(collection_config.num_points)
@@ -611,7 +610,7 @@ def eddystone_unlock_collect(config, target_path, name, average_out, plot, max_p
     plaintexts = []
     f = open(path.join(target_path, 'pt_%s.txt' % name), 'w')
     cnt = 0
-    with click.progressbar(range(num_points)) as bar:
+    with click.progressbar(list(range(num_points))) as bar:
         for index in bar:
             gnuradio.start()
             time.sleep(0.01)
@@ -749,7 +748,7 @@ class GNUradio(gr.top_block):
         	",".join(('', "")),
         	uhd.stream_args(
         		cpu_format="fc32",
-        		channels=range(2),
+        		channels=list(range(2)),
         	),
             )
             radio_block.set_samp_rate(sampling_rate)
