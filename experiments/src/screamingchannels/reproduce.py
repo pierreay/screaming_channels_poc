@@ -690,7 +690,7 @@ def hwencryption(plot):
 
 
 @cli.command()
-@click.argument("output_file", click.File(mode='w'))
+@click.argument("output_file") #, click.File(mode='w'))
 def create_waterfall(output_file):
     """
     Create the waterfall diagram of AES for the paper.
