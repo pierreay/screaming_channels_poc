@@ -1,5 +1,4 @@
-#!/usr/bin/python2
-# The collection script has to use Python 2 for GNUradio, so keep using it here.
+#!/usr/bin/python3
 
 import click
 import numpy as np
@@ -29,7 +28,7 @@ import math
 import statsmodels.api as sm
 from sklearn.feature_selection import mutual_info_classif
 
-from load import generic_load
+from .load import generic_load
 
 
 # Configuration that applies to all attacks; set by the script entry point (cli()).
@@ -131,7 +130,7 @@ def cli(data_path, num_traces, start_point, end_point, plot, save_images, wait, 
     FIXED_KEY, PLAINTEXTS, KEYS, TRACES = generic_load(data_path, name, num_traces,
             start_point, end_point, average, norm, norm2, mimo)
     
-    CIPHERTEXTS = map(aes, PLAINTEXTS, KEYS)
+    CIPHERTEXTS = list(map(aes, PLAINTEXTS, KEYS))
 
     variable_func = None
     PLAINTEXTS = np.asarray(PLAINTEXTS)
@@ -169,28 +168,28 @@ def intermediate(pt, keyguess):
     return sbox[pt ^ keyguess]
 
 def print_result(bestguess,knownkey,pge):
-    print "Best Key Guess: ",
-    for b in bestguess: print " %02x "%b,
-    print ""
+    print("Best Key Guess: ", end=' ')
+    for b in bestguess: print(" %02x "%b, end=' ')
+    print("")
     
-    print "Known Key:      ",
-    for b in knownkey: print " %02x "%b,
-    print ""
+    print("Known Key:      ", end=' ')
+    for b in knownkey: print(" %02x "%b, end=' ')
+    print("")
     
-    print "PGE:            ",
-    for b in pge: print "%03d "%b,
-    print ""
+    print("PGE:            ", end=' ')
+    for b in pge: print("%03d "%b, end=' ')
+    print("")
 
-    print "SUCCESS:        ",
+    print("SUCCESS:        ", end=' ')
     tot = 0
     for g,r in zip(bestguess,knownkey):
         if(g==r):
-            print "  1 ",
+            print("  1 ", end=' ')
             tot += 1
         else:
-            print "  0 ",
-    print ""
-    print "NUMBER OF CORRECT BYTES: %d"%tot
+            print("  0 ", end=' ')
+    print("")
+    print("NUMBER OF CORRECT BYTES: %d"%tot)
 
 ### CHES20 UTILS ###
 
@@ -200,44 +199,44 @@ def compute_variables(variable):
     VARIABLES = np.zeros((NUM_KEY_BYTES, len(TRACES)), dtype=int)
     FIXED_PLAINTEXT = False
     if variable == "hw_sbox_out":
-        CLASSES = range(0, 9)
+        CLASSES = list(range(0, 9))
         VARIABLE_FUNC = lambda p, k : hw[sbox[p ^ k]]
     elif variable == "hw_p_xor_k":
-        CLASSES = range(0, 9)
+        CLASSES = list(range(0, 9))
         VARIABLE_FUNC = lambda p, k : hw[p ^ k]
     elif variable == "sbox_out":
-        CLASSES = range(0, 256)
+        CLASSES = list(range(0, 256))
         VARIABLE_FUNC = lambda p, k : sbox[p ^ k]
     elif variable == "p_xor_k":
-        CLASSES = range(0, 256)
+        CLASSES = list(range(0, 256))
         VARIABLE_FUNC = lambda p, k : p ^ k
     elif variable == "p":
-        CLASSES = range(0, 256)
+        CLASSES = list(range(0, 256))
         VARIABLE_FUNC = lambda p, k : p
         FIXED_PLAINTEXT = True
     elif variable == "hw_p":
-        CLASSES = range(0, 9)
+        CLASSES = list(range(0, 9))
         VARIABLE_FUNC = lambda p, k : hw[p]
         FIXED_PLAINTEXT = True
     elif variable == "hw_k":
-        CLASSES = range(0, 9)
+        CLASSES = list(range(0, 9))
         VARIABLE_FUNC = lambda p, k : hw[k]
     elif variable == "k":
-        CLASSES = range(0, 256)
+        CLASSES = list(range(0, 256))
         VARIABLE_FUNC = lambda p, k : k
     elif variable == "hw_k":
-        CLASSES = range(0, 9)
+        CLASSES = list(range(0, 9))
         VARIABLE_FUNC = lambda p, k : hw[k]
     elif variable == "hd":
-        CLASSES = range(0, 7)
+        CLASSES = list(range(0, 7))
         VARIABLE_FUNC = lambda p, k : hw[(p ^ k) ^ sbox[p ^ k]] - 1
     elif variable == "fixed_vs_fixed":
-        CLASSES = range(0, 2)
+        CLASSES = list(range(0, 2))
         VARIABLE_FUNC = lambda p, k: 1 if p ^ k == 48 else 0
     elif variable == "c":
-        CLASSES = range(0, 256)
+        CLASSES = list(range(0, 256))
     elif variable == "hw_c":
-        CLASSES = range(0, 9)
+        CLASSES = list(range(0, 9))
     else:
         raise Exception("Variable type %s is not supported" % variable)
 
@@ -249,7 +248,7 @@ def compute_variables(variable):
             VARIABLES[bnum] = [hw[c] for c in CIPHERTEXTS[:,bnum]]
     else:
         for bnum in range(NUM_KEY_BYTES):
-            VARIABLES[bnum] = map(VARIABLE_FUNC, PLAINTEXTS[:, bnum], KEYS[:, bnum])
+            VARIABLES[bnum] = list(map(VARIABLE_FUNC, PLAINTEXTS[:, bnum], KEYS[:, bnum]))
 
 # Classify the traces according to the leak variable
 def classify():
@@ -296,7 +295,7 @@ def estimate_ttest():
     
     tmax = np.max(np.absolute(TTESTS[0]))
     p = PTTESTS[0][np.argmax(np.absolute(TTESTS[0]))]
-    print "tmax", tmax, "p", p, "p < 0.00001", p < 0.00001
+    print("tmax", tmax, "p", p, "p < 0.00001", p < 0.00001)
 
 # Split a set of traces into a k-folds, 1 for test and k-1 for profiling
 # fold indicates which of the k-folds is the test set
@@ -401,8 +400,8 @@ def estimate_corr():
     for bnum in range(NUM_KEY_BYTES):
         for i in range(len(TRACES[0])):
             CORRS[bnum,i], PS[bnum,i] = pearsonr(TRACES[:, i], VARIABLES[bnum])
-        print "byte", bnum, "min: ", np.min(CORRS[bnum]),-np.log10(PS[bnum][np.argmin(CORRS[bnum])])
-        print "byte", bnum, "max: ", np.max(CORRS[bnum]),-np.log10(PS[bnum][np.argmax(CORRS[bnum])])
+        print("byte", bnum, "min: ", np.min(CORRS[bnum]),-np.log10(PS[bnum][np.argmin(CORRS[bnum])]))
+        print("byte", bnum, "max: ", np.max(CORRS[bnum]),-np.log10(PS[bnum][np.argmax(CORRS[bnum])]))
 
 # Given one among r, t, snr, soad, find the Points of Interest by finding the
 # peaks
@@ -569,7 +568,7 @@ def build_profile(variable, template_dir='.'):
   
     if PLOT or SAVE_IMAGES:
         for i in range(num_pois):
-            for spine in plt.gca().spines.values():
+            for spine in list(plt.gca().spines.values()):
                     spine.set_visible(False)
 
             #plt.title("Profiles (%s, %d traces, %s variable, %d classes, poi %d)"%(DATAPATH,
@@ -676,13 +675,13 @@ def fit(lr_type, variable):
             plt.legend(loc='upper right')
             plt.show()
 
-    print ""
-    print "Correlation between fit and profile"
+    print("")
+    print("Correlation between fit and profile")
     for bnum in range(NUM_KEY_BYTES):
          #print np.corrcoef(PROFILE_MEANS[bnum][:, 0],
          #       PROFILE_MEANS_FIT[bnum][:, 0])[0, 1]
          r,p = pearsonr(PROFILE_MEANS[bnum][:, 0], PROFILE_MEANS_FIT[bnum][:, 0])
-         print r, -10*np.log10(p)
+         print(r, -10*np.log10(p))
 
     PROFILE_MEANS = PROFILE_MEANS_FIT
     PROFILE_COVS = None
@@ -728,13 +727,13 @@ def run_attack(attack_algo, average_bytes, num_pois, pooled_cov, variable):
     bestguess = [0]*16
     pge = [256]*16
     
-    print ""
+    print("")
 
     ranking_type = "pearson"
     if attack_algo == "pdf":
 
         if num_pois > len(PROFILE_COVS[0][0][0]):
-            print "Error, there are only %d pois available"%len(PROFILE_COVS[0][0][0])
+            print("Error, there are only %d pois available"%len(PROFILE_COVS[0][0][0]))
 
         for bnum in range(0, NUM_KEY_BYTES):
             if pooled_cov:
@@ -742,7 +741,7 @@ def run_attack(attack_algo, average_bytes, num_pois, pooled_cov, variable):
             else:
                 covs = PROFILE_COVS[bnum][:,0:num_pois,0:num_pois]
 
-            print "Subkey %2d"%bnum
+            print("Subkey %2d"%bnum)
             # Running total of log P_k
             P_k = np.zeros(256)
             for j, trace in enumerate(TRACES):
@@ -772,14 +771,14 @@ def run_attack(attack_algo, average_bytes, num_pois, pooled_cov, variable):
                 P_k += P_k_tmp
 
                 if j % 100 == 0:
-                    print j, "pge ", list(P_k.argsort()[::-1]).index(KEYS[0][bnum])
+                    print(j, "pge ", list(P_k.argsort()[::-1]).index(KEYS[0][bnum]))
             LOG_PROBA[bnum] = P_k
             bestguess[bnum] = P_k.argsort()[-1]
             if FIXED_PLAINTEXT:
                 pge[bnum] = list(P_k.argsort()[::-1]).index(PLAINTEXTS[0][bnum])
             else:
                 pge[bnum] = list(P_k.argsort()[::-1]).index(KEYS[0][bnum])
-            print "PGE ", pge[bnum]
+            print("PGE ", pge[bnum])
             scores.append(P_k)
     
     elif attack_algo == "pcc":
@@ -791,7 +790,7 @@ def run_attack(attack_algo, average_bytes, num_pois, pooled_cov, variable):
         for bnum in range(0, NUM_KEY_BYTES):
             cpaoutput = [0]*256
             maxcpa = [0]*256
-            print "Subkey %2d"%bnum
+            print("Subkey %2d"%bnum)
             for kguess in range(256):
                 
                 clas = [VARIABLE_FUNC(PLAINTEXTS[j][bnum], kguess) for j in
@@ -846,8 +845,8 @@ def aes(pt, key):
 
 # Wrapper to call the Histogram Enumeration Library for key-enumeration
 def bruteforce(bit_bound_end):
-    print ""
-    print "Starting key enumeration using HEL"
+    print("")
+    print("Starting key enumeration using HEL")
     import ctypes
     from Crypto.Cipher import AES
  
@@ -856,7 +855,7 @@ def bruteforce(bit_bound_end):
     pt1 = np.array(PLAINTEXTS[0], dtype=ctypes.c_ubyte)
     pt2 = np.array(PLAINTEXTS[1], dtype=ctypes.c_ubyte)
  
-    print "Assuming that we know two plaintext/ciphertext pairs"
+    print("Assuming that we know two plaintext/ciphertext pairs")
     _key = ''.join([chr(c) for c in KEYS[0]])
     _pt1 = ''.join([chr(c) for c in pt1])
     _pt2 = ''.join([chr(c) for c in pt2])
@@ -1016,7 +1015,7 @@ def tra_create(template_dir, num_pois, poi_spacing):
 
     if WAIT:
         print("Loading complete")
-        raw_input("Press any key to start\n")
+        input("Press any key to start\n")
  
     if PLOT:
         plt.plot(np.average(TRACES,axis=0),'b')
@@ -1112,7 +1111,7 @@ def tra_attack(template_dir):
     """
     if WAIT:
         print("Loading complete")
-        raw_input("Press any key to start")
+        input("Press any key to start")
         
     if PLOT:
         plt.plot(np.average(TRACES,axis=0),'b')
@@ -1161,23 +1160,23 @@ def tra_attack(template_dir):
             if j % 10 == 1:
                 # import os
                 # os.system('clear')
-                print "PGE ",list(P_k.argsort()[::-1]).index(atkKey[knum]),
+                print("PGE ",list(P_k.argsort()[::-1]).index(atkKey[knum]), end=' ')
                 # for g in P_k.argsort()[::-1]:
                     # if g == atkKey[knum]:
                         # print '\033[92m%02x\033[0m'%g,
                     # else:
                         # print '%02x'%g,
-                print ""
+                print("")
             
             if all(k == atkKey[knum] for k in window) or (j == len(TRACES)-1 and guessed == atkKey[knum]):
-                print "subkey %2d found with %4d traces" % (knum, j)
+                print("subkey %2d found with %4d traces" % (knum, j))
                 tot += 1
                 break
         else:
             p = list(P_k.argsort()[::-1]).index(atkKey[knum])
-            print "subkey %2d NOT found, PGE = %3d" %(knum,p)
+            print("subkey %2d NOT found, PGE = %3d" %(knum,p))
 
-        print ""
+        print("")
         bestguess[knum] = P_k.argsort()[-1]
         pge[knum] = list(P_k.argsort()[::-1]).index(atkKey[knum])
         scores.append(P_k)
@@ -1204,7 +1203,7 @@ def cra():
     
     if WAIT:
         print("Loading complete")
-        raw_input("Press any key to start")
+        input("Press any key to start")
  
     if PLOT:
         for t in TRACES:
@@ -1238,7 +1237,7 @@ def cra():
         cpaoutput = [0]*256
         maxcpa = [0]*256
         for kguess in range(256):
-            print "Subkey %2d, hyp = %02x: "%(bnum, kguess),
+            print("Subkey %2d, hyp = %02x: "%(bnum, kguess), end=' ')
 
             #Initialize arrays and variables to zero
             sumnum = np.zeros(numpoint)
@@ -1266,7 +1265,7 @@ def cra():
             cpaoutput[kguess] = sumnum / np.sqrt(sumden1 * sumden2)
             maxcpa[kguess] = max(abs(cpaoutput[kguess]))
             LOG_PROBA[bnum][kguess] = maxcpa[kguess]
-            print maxcpa[kguess]
+            print(maxcpa[kguess])
     
         bestguess[bnum] = np.argmax(maxcpa)
     
