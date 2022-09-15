@@ -56,7 +56,7 @@ class AnyDevice(gatt.Device):
         socket.send(b"ble dongle ready")
         # wait to start
         self.last_cmd = socket.recv()
-        print(self.last_cmd)
+        print((self.last_cmd))
         
         # Get the challenge
         self.collected_traces = 0
@@ -70,7 +70,7 @@ class AnyDevice(gatt.Device):
         print("Enable notification succeeded")
 
     def characteristic_enable_notification_failed(self, characteristic, error):
-        print("Enable notification failed, error:", error)
+        print(("Enable notification failed, error:", error))
 
     def characteristic_write_value_succeeded(self, characteristic):
         if characteristic == self.unlock_characteristic:
@@ -97,10 +97,10 @@ class AnyDevice(gatt.Device):
             elif self.last_cmd == b'set new key':
                 print("Writen new key")
                 socket.send(self.new_key)
-                print("aaaaa",socket.recv())
+                print(("aaaaa",socket.recv()))
                 socket.send(b'ble dongle ready with new key')
                 self.last_cmd = socket.recv()
-                print(self.last_cmd)
+                print((self.last_cmd))
                 # self.remain_connectable_characteristic.read_value()
                 self.unlock_characteristic.read_value()
         # self.lock_state_characteristic.read_value()
@@ -108,12 +108,12 @@ class AnyDevice(gatt.Device):
         
 
     def characteristic_write_value_failed(self, characteristic, error):
-        print("Write failed, error:", error)
+        print(("Write failed, error:", error))
 
     def characteristic_value_updated(self, characteristic, value):
         
         if characteristic.uuid == 'a3c87506-8ed3-4bdf-8a39-a01bebede295':
-            print("Lock State", value)
+            print(("Lock State", value))
             print("bye bye")
             self.disconnect()
             manager.stop()
@@ -121,9 +121,9 @@ class AnyDevice(gatt.Device):
             print("remain connectable")
             # self.remain_connectable_characteristic.read_value()
         else:
-            print("Challenge: ", value)
+            print(("Challenge: ", value))
 
-            print("Last cmd:", self.last_cmd)
+            print(("Last cmd:", self.last_cmd))
             if(self.last_cmd == b'set new key' or self.last_cmd == b'quit'):
                 self.challenge = value
                 if self.last_cmd == b'quit':
@@ -138,7 +138,7 @@ class AnyDevice(gatt.Device):
                     #_key = b'\xec\x74\xe6\x70\xf1\x16\x5d\x7b\xd6\x78\xe2\x50\x75\x43\x89\xd9'
                 cipher = AES.new(_key, AES.MODE_ECB)
                 ct = cipher.encrypt(self.challenge)
-                print("Response", ct)
+                print(("Response", ct))
                 self.unlock_characteristic.write_value(ct)
                 return
 
@@ -174,4 +174,3 @@ device = AnyDevice(mac_address='d4:37:ce:01:da:52', manager=manager)
 device.connect()
 
 manager.run()
-
