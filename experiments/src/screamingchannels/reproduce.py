@@ -220,7 +220,7 @@ def _encode_for_device(data):
     """
     Encode the given bytes in our special format.
     """
-    return " ".join(str(ord(data_byte)) for data_byte in data)
+    return " ".join(str(data_byte) for data_byte in data)
 
 
 def _send_parameter(ser, command, param):
