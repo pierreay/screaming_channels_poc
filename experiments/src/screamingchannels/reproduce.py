@@ -409,7 +409,7 @@ def collect(config, target_path, name, average_out, plot, max_power, raw):
                 ser.write(b'c')     # start continuous wave
 
         l.debug('Entering test mode')
-        ser.write(firmware_mode.mode_command) # enter test mode
+        ser.write(firmware_mode.mode_command.encode()) # enter test mode
         print((ser.readline()))
 
         if firmware_mode.repetition_command:
