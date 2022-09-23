@@ -232,10 +232,10 @@ def _send_parameter(ser, command, param):
     command_line = '%s%s\r\n' % (command, _encode_for_device(param))
     l.debug('Sending command:  %s\n' % command_line)
     if not COMMUNICATE_SLOW:
-        ser.write(command_line)
+        ser.write(command_line.encode())
     else:
         for p in command_line.split(' '):
-            ser.write(p+' ')
+            ser.write((p+' ').encode())
             time.sleep(.05)
 
     l.debug('Waiting check\n')
@@ -414,7 +414,7 @@ def collect(config, target_path, name, average_out, plot, max_power, raw):
 
         if firmware_mode.repetition_command:
             l.debug('Setting trace repitions')
-            ser.write('n%d\r\n' % num_traces_per_point)
+            ser.write(('n%d\r\n' % num_traces_per_point).encode())
             print((ser.readline()))
 
         if firmware_mode.have_keys and firmware_config.fixed_key:
@@ -427,7 +427,7 @@ def collect(config, target_path, name, average_out, plot, max_power, raw):
 
         if firmware_config.mode == 'maskaes' or firmware_config.mode == 'maskaes_slow':
             l.debug('Setting masking mode to %d', firmware_config.mask_mode)
-            ser.write('%d\r\n' % firmware_config.mask_mode)
+            ser.write(('%d\r\n' % firmware_config.mask_mode).encode())
             print((ser.readline()))
 
 
@@ -464,12 +464,12 @@ def collect(config, target_path, name, average_out, plot, max_power, raw):
                 if firmware_mode.repetition_command:
                     # The test mode supports repeated actions.
                     l.debug('Start repetitions')
-                    ser.write(firmware_mode.action_command)
+                    ser.write(firmware_mode.action_command.encode())
                     ser.readline() # wait until done
                 else:
                     for _iteration in range(num_traces_per_point):
                         time.sleep(firmware_config.slow_mode_sleep_time)
-                        ser.write(firmware_mode.action_command) # single action
+                        ser.write(firmware_mode.action_command.encode()) # single action
 
                 time.sleep(0.09)
                 gnuradio.stop()
