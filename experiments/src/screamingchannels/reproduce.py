@@ -795,6 +795,8 @@ class GNUradio(gr.top_block):
 
 
         self._file_sink = blocks.file_sink(gr.sizeof_gr_complex, OUTFILE)
+        print(radio_block)
+        print(self._file_sink)
         self.connect((radio_block, 0), (self._file_sink, 0))
 
         if RADIO == Radio.USRP_B210_MIMO:
