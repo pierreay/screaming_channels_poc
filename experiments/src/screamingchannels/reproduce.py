@@ -239,7 +239,7 @@ def _send_parameter(ser, command, param):
             time.sleep(.05)
 
     l.debug('Waiting check\n')
-    x = ser.readline().decode()
+    x = ser.readline()
     print ("received: "+x)
     if len(x) == 0:
         print("nothing received on timeout, ignoring error")
