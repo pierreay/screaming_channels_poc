@@ -246,9 +246,12 @@ def _send_parameter(ser, command, param):
         return 
     #check = ''.join(chr(int(word)) for word in x.split(' '))
     # -- create check like this instead for ESP32:
-    response = ser.readline()
-    response = [ a for a in response.decode().split(' ') if a.isdigit() ]
+    #response = ser.readline()
+    response = [ a for a in x.decode().split(' ') if a.isdigit() ]
     check = ''.join(chr(int(word)) for word in response)
+    
+    print ("param: "+param)
+    print ("check: "+check)
     if check != param:
         print(("ERROR\n%s\n%s" % (_encode_for_device(param),
                                  _encode_for_device(check))))
