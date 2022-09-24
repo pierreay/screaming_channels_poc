@@ -250,7 +250,7 @@ def _send_parameter(ser, command, param):
     response = [ a for a in x.decode().split(' ') if a.isdigit() ]
     check = ''.join(chr(int(word)) for word in response)
     
-    print ("param: "+param)
+    print ("param: "+param.decode())
     print ("check: "+check)
     if check != param:
         print(("ERROR\n%s\n%s" % (_encode_for_device(param),
