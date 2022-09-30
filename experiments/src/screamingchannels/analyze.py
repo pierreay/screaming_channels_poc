@@ -1,10 +1,11 @@
 #!/usr/bin/python3
 import numpy as np
 
+import matplotlib
+matplotlib.use( 'tkagg' )
+
 from matplotlib import pyplot as plt
 from matplotlib import mlab
-
-plt.use( 'tkagg' )
 
 from scipy import signal
 from scipy.signal import butter, lfilter
