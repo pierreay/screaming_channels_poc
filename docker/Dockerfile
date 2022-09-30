@@ -1,18 +1,14 @@
 from ubuntu:latest
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN apt-get update && apt-get install -yq software-properties-common && \
-    apt-get update && add-apt-repository ppa:gnuradio/gnuradio-releases 
+RUN apt-get update && apt-get install -yq software-properties-common 
 RUN apt-get update && apt-get install -yq \
     gnuradio-dev gr-osmosdr hackrf gqrx-sdr \
     git vim python3-pip minicom  \
     xauth sudo wget unzip libiio0 libiio-utils \
     udiskie gcc-arm-none-eabi bluez
      
-RUN pip3 install setuptools gatt==0.2.7 pyzmq==24.0.0   
-
-
-
+RUN pip3 install setuptools gatt==0.2.7 pyzmq==24.0.0 
 
 ENV SC=/screaming_channels
 ENV PYTHONPATH=/usr/lib/python3/dist-packages:/usr/lib/python3/site-packages
@@ -20,6 +16,7 @@ ENV LD_LIBRARY_PATH=/usr/lib
 
 RUN git clone https://www.github.com/muchlikeacat/screaming_channels
 WORKDIR /screaming_channels
+
 
 RUN cd experiments/src/ && python3 setup.py develop
 
