@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import mlab
 
-matplotlib.use( 'tkagg' )
+plt.use( 'tkagg' )
 
 from scipy import signal
 from scipy.signal import butter, lfilter
