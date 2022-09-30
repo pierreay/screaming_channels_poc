@@ -253,9 +253,9 @@ def _send_parameter(ser, command, param):
     
     print ("param: "+param2)
     print ("check: "+x.decode())
-    if x.decode() != param2:
+    if x.decode().strip() != param2.strip():
         print(("ERROR\n%s\n%s" % (_encode_for_device(param),
-                                 _encode_for_device(check))))
+                                 _encode_for_device(x))))
         ser.write(b'q')
         sys.exit(1)
     l.debug('Check done\n')
