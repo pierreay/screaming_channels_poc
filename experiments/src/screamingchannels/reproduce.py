@@ -524,6 +524,7 @@ def collect(config, target_path, name, average_out, plot, max_power, raw):
         ser.write(b'q')     # quit tiny_aes mode
         print((ser.readline()))
         ser.write(b'e')     # turn off continuous wave
+        ser.close()
 
 @cli.command()
 @click.argument("config", type=click.File())
@@ -668,6 +669,7 @@ def cw_with_regswitch(plot):
             time.sleep(1)
             ser.write(b'e')     # disable continuous wave
             time.sleep(1)
+        ser.close()
 
     if plot:
         _plot_outfile()
@@ -688,6 +690,7 @@ def hwencryption(plot):
             time.sleep(0.05)
             ser.write(b'e')     # end
             time.sleep(0.05)
+        ser.close()
 
     if plot:
         _plot_outfile()
@@ -713,6 +716,7 @@ def create_waterfall(output_file):
 
         ser.write(b'q')         # leave AES mode
         ser.write(b'e')         # stop carrier
+        ser.close()
 
     from matplotlib import pyplot as plt
 
