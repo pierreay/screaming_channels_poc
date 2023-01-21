@@ -115,7 +115,7 @@ def find_starts(config, data):
 # The code below contains a few hacks to deal with all possible errors we
 # encountered with different radios and setups. It is not very clean but it is
 # quite stable.
-def extract(capture_file, config, average_file_name=None, plot=False):
+def extract(capture_file, config, average_file_name=None, plot=False, target_path=None, savePlot=False):
     """
     Post-process a GNUradio capture to get a clean and well-aligned trace.
 
@@ -133,11 +133,12 @@ def extract(capture_file, config, average_file_name=None, plot=False):
             print("Warning! empty data, replacing with zeros")
             template = np.load(config.template_name)
             return np.zeros(len(template))
-
+    
         # plt.plot(data)
         # plt.show()
 
         template = np.load(config.template_name) if config.template_name else None
+        
         if template is not None and len(template) != int(
                 config.signal_length * config.sampling_rate):
             print("WARNING: Template length doesn't match collection parameters. "
@@ -181,7 +182,7 @@ def extract(capture_file, config, average_file_name=None, plot=False):
                 break
 
             trace = data[start:stop]
-            if template is None:
+            if template is None or len(template) == 0:
                 template = trace
                 continue
 
@@ -189,9 +190,7 @@ def extract(capture_file, config, average_file_name=None, plot=False):
                     config.sampling_rate)
             template_lpf = butter_lowpass_filter(template, config.sampling_rate / 4,
                     config.sampling_rate)
-            
             correlation = signal.correlate(trace_lpf**2, template_lpf**2)
-            
             # print max(correlation)
             if max(correlation) <= config.min_correlation:
                 continue
@@ -245,8 +244,8 @@ def extract(capture_file, config, average_file_name=None, plot=False):
         if average_file_name:
             np.save(average_file_name, avg)
 
-        if plot:
-            plot_results(config, data, trigger, trigger_avg, trace_starts, traces)
+        if plot or savePlot:
+            plot_results(config, data, trigger, trigger_avg, trace_starts, traces, target_path, plot, savePlot)
 
         std = np.std(traces,axis=0)
 
@@ -265,12 +264,13 @@ def extract(capture_file, config, average_file_name=None, plot=False):
         else:
             return avg
 
-    except:
+    except Exception as inst:
+        print(inst)
         print("Error, returning zeros")
         template = np.load(config.template_name)
         return np.zeros(len(template))
 
-def plot_results(config, data, trigger, trigger_average, starts, traces):
+def plot_results(config, data, trigger, trigger_average, starts, traces, target_path=None, plot=True, savePlot=False):
     plt.subplots_adjust(hspace = 0.6) 
     plt.subplot(4, 1, 1)
 
@@ -289,11 +289,14 @@ def plot_results(config, data, trigger, trigger_average, starts, traces):
         plt.axvline(x=stop / config.sampling_rate, color='g', linestyle='--')
 
     plt.subplot(4, 1, 2)
+    #np.set_printoptions(threshold=np.inf)
+    #print(data)
+    
     plt.specgram(
         data, NFFT=128, Fs=config.sampling_rate, Fc=0, detrend=mlab.detrend_none,
         window=mlab.window_hanning, noverlap=127, cmap=None, xextent=None,
         pad_to=None, sides='default', scale_by_freq=None, mode='default',
-        scale='default')
+        scale='linear')
     plt.title("Spectrogram")
     plt.xlabel("time [s]")
     plt.ylabel("frequency [Hz]")
@@ -322,7 +325,10 @@ def plot_results(config, data, trigger, trigger_average, starts, traces):
         plt.xlabel("time [s]")
         plt.ylabel("normalized amplitude")
 
-    plt.show()
+    if savePlot and target_path != None:
+        plt.savefig(target_path + "/plot.png")
+    if plot:
+        plt.show()
 
 if __name__ == "__main__":
     extract(True)
