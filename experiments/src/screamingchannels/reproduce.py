@@ -215,7 +215,6 @@ def _plot_outfile():
     plt.plot(np.absolute(data))
     plt.show()
 
-
 def _encode_for_device(data):
     """
     Encode the given bytes in our special format.
@@ -284,11 +283,13 @@ def save_raw(capture_file, target_path, index, name):
               help="File to write the average to (i.e. the template candidate).")
 @click.option("--plot/--no-plot", default=False, show_default=True,
               help="Plot the results of trace collection.")
+@click.option("--saveplot/--no-saveplot", default=False, show_default=True,
+              help="Plot the results of trace collection.")
 @click.option("--max-power/--no-max-power", default=False, show_default=True,
               help="Set the output power of the device to its maximum.")
 @click.option("--raw/--no-raw", default=False, show_default=True,
               help="Save the raw IQ data.")
-def collect(config, target_path, name, average_out, plot, max_power, raw):
+def collect(config, target_path, name, average_out, plot, saveplot, max_power, raw):
     """
     Collect traces for an attack.
 
@@ -479,7 +480,7 @@ def collect(config, target_path, name, average_out, plot, max_power, raw):
                 gnuradio.stop()
                 gnuradio.wait()
 
-                trace = analyze.extract(OUTFILE, collection_config, average_out, plot)
+                trace = analyze.extract(OUTFILE, collection_config, average_out, plot, target_path, saveplot)
                 
                 if RADIO == Radio.USRP_B210_MIMO:
                     trace_2 = analyze.extract(OUTFILE+"_2", collection_config, average_out, plot)
@@ -524,6 +525,8 @@ def collect(config, target_path, name, average_out, plot, max_power, raw):
         ser.write(b'q')     # quit tiny_aes mode
         print((ser.readline()))
         ser.write(b'e')     # turn off continuous wave
+        
+        time.sleep(1)
         ser.close()
 
 @cli.command()
@@ -728,7 +731,7 @@ def create_waterfall(output_file):
     plt.xlabel('Time (ms)')
     plt.ylabel('Baseband frequency (kHz)')
     plt.savefig(output_file, bbox_inches='tight')
-    plt.show()
+    #plt.show()
 
 
 def _open_serial_port():
