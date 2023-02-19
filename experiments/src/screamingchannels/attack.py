@@ -182,7 +182,7 @@ def print_result(bestguess,knownkey,pge):
 
     print("SUCCESS:        ", end=' ')
     tot = 0
-    for g,r in zip(bestguess,knownkey):
+    for g,r in list(zip(bestguess,knownkey)):
         if(g==r):
             print("  1 ", end=' ')
             tot += 1
@@ -255,7 +255,7 @@ def classify():
     global SETS
     SETS = [[[] for _ in CLASSES] for b in range(NUM_KEY_BYTES)]
     for bnum in range(NUM_KEY_BYTES):
-        for cla, trace in zip(VARIABLES[bnum], TRACES):
+        for cla, trace in list(zip(VARIABLES[bnum], TRACES)):
             SETS[bnum][cla].append(trace)
 
         SETS[bnum] = [np.array(SETS[bnum][cla]) for cla in CLASSES]
@@ -324,7 +324,7 @@ def classify_and_estimate_profile():
     MEANS_PROFILE = np.zeros((NUM_KEY_BYTES, len(CLASSES), len(TRACES[0])))
     sets = [[[] for _ in CLASSES] for b in range(NUM_KEY_BYTES)]
     for bnum in range(NUM_KEY_BYTES):
-        for cla, trace in zip(VARIABLES_PROFILE[bnum], TRACES_PROFILE):
+        for cla, trace in list(zip(VARIABLES_PROFILE[bnum], TRACES_PROFILE)):
             sets[bnum][cla].append(trace)
 
         sets[bnum] = [np.array(sets[bnum][cla]) for cla in CLASSES]
@@ -561,10 +561,11 @@ def build_profile(variable, template_dir='.'):
             for i in range(num_pois):
                 PROFILE_MEANS[bnum][cla][i] = MEANS[bnum][cla][POIS[bnum][i]]
                 PROFILE_STDS[bnum][cla][i] = STDS[bnum][cla][POIS[bnum][i]]
-                for j in range(num_pois):
-                    PROFILE_COVS[bnum][cla][i][j] = cov(
-                            SETS[bnum][cla][:, POIS[bnum][i]],
-                            SETS[bnum][cla][:, POIS[bnum][j]])
+                for j in range(num_pois):	
+                    if(len(SETS[bnum][cla])>0):	
+                        PROFILE_COVS[bnum][cla][i][j] = cov(
+                                SETS[bnum][cla][:, POIS[bnum][i]],
+                                SETS[bnum][cla][:, POIS[bnum][j]])
   
     if PLOT or SAVE_IMAGES:
         for i in range(num_pois):
@@ -832,15 +833,15 @@ def run_attack(attack_algo, average_bytes, num_pois, pooled_cov, variable):
 # Wrapper to compute AES
 def aes(pt, key):
     from Crypto.Cipher import AES
-    
-    _pt = ''.join([chr(c) for c in pt])
-    _key = ''.join([chr(c) for c in key])
-    
-    cipher = AES.new(_key, AES.MODE_ECB)
-    _ct = cipher.encrypt(_pt)
-    
-    ct = [ord(c) for c in _ct]
 
+    #_pt = ''.join([chr(c) for c in pt])	
+    _pt = b''.join([b.to_bytes(1,"little") for b in pt])	
+    #_key = ''.join([chr(c) for c in key])	
+    _key = b''.join([b.to_bytes(1,"little") for b in key])	
+    cipher = AES.new(_key, AES.MODE_ECB)	
+    _ct = cipher.encrypt(_pt)	
+    ct = [c for c in _ct]
+    
     return ct
 
 # Wrapper to call the Histogram Enumeration Library for key-enumeration
@@ -852,22 +853,29 @@ def bruteforce(bit_bound_end):
  
     from python_hel import hel
    
-    pt1 = np.array(PLAINTEXTS[0], dtype=ctypes.c_ubyte)
-    pt2 = np.array(PLAINTEXTS[1], dtype=ctypes.c_ubyte)
+    pt1 = np.array(PLAINTEXTS[0], dtype=ctypes.c_ubyte).tolist()
+    pt2 = np.array(PLAINTEXTS[1], dtype=ctypes.c_ubyte).tolist()
  
     print("Assuming that we know two plaintext/ciphertext pairs")
-    _key = ''.join([chr(c) for c in KEYS[0]])
-    _pt1 = ''.join([chr(c) for c in pt1])
-    _pt2 = ''.join([chr(c) for c in pt2])
+    #_key = ''.join([chr(c) for c in KEYS[0]])	
+    __key = KEYS[0].tolist()	
+    _key = b''.join([b.to_bytes(1,"little") for b in __key])	
+    #_pt1 = ''.join([chr(c) for c in pt1])	
+    _pt1 = b''.join([b.to_bytes(1,"little") for b in pt1])	
+    #_pt2 = ''.join([chr(c) for c in pt2])	
+    _pt2 = b''.join([b.to_bytes(1,"little") for b in pt2])	
+ 
  
     cipher = AES.new(_key, AES.MODE_ECB)
  
     _ct1 = cipher.encrypt(_pt1)
     _ct2 = cipher.encrypt(_pt2)
     
-    ct1 = [ord(c) for c in _ct1]
+    #ct1 = [ord(c) for c in _ct1]	
+    ct1 = [c for c in _ct1] 
     ct1 = np.array(ct1, dtype=ctypes.c_ubyte)
-    ct2 = [ord(c) for c in _ct2]
+    #ct2 = [ord(c) for c in _ct2]	
+    ct2 = [c for c in _ct2] 
     ct2 = np.array(ct2, dtype=ctypes.c_ubyte)
 
     merge = 2
