@@ -20,6 +20,7 @@ def load_all(filename, number=0):
     return [[int(c) for c in bytearray.fromhex(line)]
             for line in data.split('\n')]
 
+
 # Per-trace pre-processing:
 # 1. z-score normalization
 def pre_process(trace, norm):
