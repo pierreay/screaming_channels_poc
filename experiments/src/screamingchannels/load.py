@@ -17,7 +17,7 @@ def load_all(filename, number=0):
                 data += f.readline()
             if data[len(data)-1] == '\n':
                  data = data[0:len(data)-1]
-    return [[ord(c) for c in line.decode('hex')]
+    return [[int(c) for c in bytearray.fromhex(line)]
             for line in data.split('\n')]
 
 # Per-trace pre-processing:
