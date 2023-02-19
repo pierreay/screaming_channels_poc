@@ -60,7 +60,7 @@ def butter_highpass_filter(data, cutoff, fs, order=5):
     y = lfilter(b, a, data)
     return y
 
-def find_starts(config, data):
+def find_starts(config, data, target_path, index):
     """
     Find the starts of interesting activity in the signal.
 
@@ -71,9 +71,22 @@ def find_starts(config, data):
     trigger = butter_bandpass_filter(
         data, config.bandpass_lower, config.bandpass_upper,
         config.sampling_rate, 6)
+    
+    #TOM ADDITION START
+    plt.clf()
+    plt.plot(trigger)
+    plt.savefig(target_path+"/"+str(index)+"_4-trigger-bandpass.png")
+    #TOM ADDITION END
+        
     trigger = np.absolute(trigger)
     trigger = butter_lowpass_filter(
         trigger, config.lowpass_freq,config.sampling_rate, 6)
+
+    #TOM ADDITION START
+    plt.clf()
+    plt.plot(trigger)
+    plt.savefig(target_path+"/"+str(index)+"_5-trigger-lowpass.png")
+    #TOM ADDITION END
 
     # transient = 0.0005
     # start_idx = int(transient * config.sampling_rate)
@@ -103,6 +116,13 @@ def find_starts(config, data):
     if trigger_signal[0]:
         starts = np.insert(starts, 0, start_idx + offset)
 
+    #TOM ADDITION START
+    plt.clf()
+    plt.plot(trigger_signal)
+    plt.savefig(target_path+"/"+str(index)+"_6-triggerstart.png")
+    #TOM ADDITION END
+
+
     # plt.plot(data)
     # plt.plot(trigger*100)
     # plt.axhline(y=average*100)
@@ -115,7 +135,7 @@ def find_starts(config, data):
 # The code below contains a few hacks to deal with all possible errors we
 # encountered with different radios and setups. It is not very clean but it is
 # quite stable.
-def extract(capture_file, config, average_file_name=None, plot=False, target_path=None, savePlot=False):
+def extract(capture_file, config, average_file_name=None, plot=False, target_path=None, savePlot=False, index=0):
     """
     Post-process a GNUradio capture to get a clean and well-aligned trace.
 
@@ -134,6 +154,11 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
             template = np.load(config.template_name)
             return np.zeros(len(template))
     
+        #TOM ADDITION START
+        plt.clf()
+        plt.plot(data)
+        plt.savefig(target_path+"/"+str(index)+"_1-data.png")
+        #TOM ADDITION END
         # plt.plot(data)
         # plt.show()
 
@@ -146,6 +171,13 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
 
         # cut usless transient
         data = data[int(config.drop_start * config.sampling_rate):]
+
+
+        #TOM ADDITION START
+        plt.clf()
+        plt.plot(data)
+        plt.savefig(target_path+"/"+str(index)+"_2-data-trimmed.png")
+        #TOM ADDITION END
 
         # assert len(data) != 0, "ERROR, empty data after drop_start"
         if len(data) == 0:
@@ -164,10 +196,15 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
 
         data = np.absolute(data)
 
+        #TOM ADDITION START
+        plt.clf()
+        plt.plot(data)
+        plt.savefig(target_path+"/"+str(index)+"_3-data-absolute.png")
+        #TOM ADDITION END
         #
         # extract/aling trace with trigger frequency + autocorrelation
         #
-        trace_starts, trigger, trigger_avg = find_starts(config, data)
+        trace_starts, trigger, trigger_avg = find_starts(config, data, target_path, index)
         
         # extract at trigger + autocorrelate with the first to align
         traces = []
@@ -296,7 +333,7 @@ def plot_results(config, data, trigger, trigger_average, starts, traces, target_
         data, NFFT=128, Fs=config.sampling_rate, Fc=0, detrend=mlab.detrend_none,
         window=mlab.window_hanning, noverlap=127, cmap=None, xextent=None,
         pad_to=None, sides='default', scale_by_freq=None, mode='default',
-        scale='linear')
+        scale='default')
     plt.title("Spectrogram")
     plt.xlabel("time [s]")
     plt.ylabel("frequency [Hz]")
