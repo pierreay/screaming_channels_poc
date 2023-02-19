@@ -283,13 +283,15 @@ def save_raw(capture_file, target_path, index, name):
               help="File to write the average to (i.e. the template candidate).")
 @click.option("--plot/--no-plot", default=False, show_default=True,
               help="Plot the results of trace collection.")
-@click.option("--saveplot/--no-saveplot", default=False, show_default=True,
-              help="Plot the results of trace collection.")
 @click.option("--max-power/--no-max-power", default=False, show_default=True,
               help="Set the output power of the device to its maximum.")
 @click.option("--raw/--no-raw", default=False, show_default=True,
               help="Save the raw IQ data.")
-def collect(config, target_path, name, average_out, plot, saveplot, max_power, raw):
+@click.option("--saveplot/--no-saveplot", default=False, show_default=True,
+              help="Plot the results of trace collection.")
+@click.option("-p", "--set-power", default=0, show_default=True,
+              help="If set, sets the device to a specific power level (overrides --max-power)")
+def collect(config, target_path, name, average_out, plot, max_power, raw, saveplot, set_power):
     """
     Collect traces for an attack.
 
@@ -391,7 +393,12 @@ def collect(config, target_path, name, average_out, plot, saveplot, max_power, r
         #print ser.readline()
         #ser.write(b'0')
         #print ser.readline()
-        if max_power:
+        if set_power != 0:
+            l.debug('Setting power level to '+str(set_power))
+            ser.write(('p'+str(set_power)).encode('UTF-8'))
+            ser.readline()
+            ser.readline()
+        elif max_power:
             l.debug('Setting power to the  maximum')
             ser.write(b'p0')
             ser.readline()
@@ -480,7 +487,7 @@ def collect(config, target_path, name, average_out, plot, saveplot, max_power, r
                 gnuradio.stop()
                 gnuradio.wait()
 
-                trace = analyze.extract(OUTFILE, collection_config, average_out, plot, target_path, saveplot)
+                trace = analyze.extract(OUTFILE, collection_config, average_out, plot, target_path, saveplot, index)
                 
                 if RADIO == Radio.USRP_B210_MIMO:
                     trace_2 = analyze.extract(OUTFILE+"_2", collection_config, average_out, plot)
