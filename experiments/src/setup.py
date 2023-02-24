@@ -9,7 +9,8 @@ setup(
         "console_scripts": [
             "sc-experiment = screamingchannels.reproduce:cli",
             "sc-attack = screamingchannels.attack:cli",
-            "sc-triage = screamingchannels.triage:cli"
+            "sc-triage = screamingchannels.triage:cli",
+            "sc-waterfall = screamingchannels.waterfall:main"
         ]
     },
     install_requires=[
