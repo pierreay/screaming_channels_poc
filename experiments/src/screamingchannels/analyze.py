@@ -73,9 +73,9 @@ def find_starts(config, data, target_path, index):
         config.sampling_rate, 6)
     
     #TOM ADDITION START
-    plt.clf()
-    plt.plot(trigger)
-    plt.savefig(target_path+"/"+str(index)+"_4-trigger-bandpass.png")
+    #plt.clf()
+    #plt.plot(trigger)
+    #plt.savefig(target_path+"/"+str(index)+"_4-trigger-bandpass.png")
     #TOM ADDITION END
         
     trigger = np.absolute(trigger)
@@ -83,9 +83,9 @@ def find_starts(config, data, target_path, index):
         trigger, config.lowpass_freq,config.sampling_rate, 6)
 
     #TOM ADDITION START
-    plt.clf()
-    plt.plot(trigger)
-    plt.savefig(target_path+"/"+str(index)+"_5-trigger-lowpass.png")
+    #plt.clf()
+    #plt.plot(trigger)
+    #plt.savefig(target_path+"/"+str(index)+"_5-trigger-lowpass.png")
     #TOM ADDITION END
 
     # transient = 0.0005
@@ -117,9 +117,9 @@ def find_starts(config, data, target_path, index):
         starts = np.insert(starts, 0, start_idx + offset)
 
     #TOM ADDITION START
-    plt.clf()
-    plt.plot(trigger_signal)
-    plt.savefig(target_path+"/"+str(index)+"_6-triggerstart.png")
+    #plt.clf()
+    #plt.plot(trigger_signal)
+    #plt.savefig(target_path+"/"+str(index)+"_6-triggerstart.png")
     #TOM ADDITION END
 
 
@@ -155,9 +155,9 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
             return np.zeros(len(template))
     
         #TOM ADDITION START
-        plt.clf()
-        plt.plot(data)
-        plt.savefig(target_path+"/"+str(index)+"_1-data.png")
+        #plt.clf()
+        #plt.plot(data)
+        #plt.savefig(target_path+"/"+str(index)+"_1-data.png")
         #TOM ADDITION END
         # plt.plot(data)
         # plt.show()
@@ -174,9 +174,9 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
 
 
         #TOM ADDITION START
-        plt.clf()
-        plt.plot(data)
-        plt.savefig(target_path+"/"+str(index)+"_2-data-trimmed.png")
+        #plt.clf()
+        #plt.plot(data)
+        #plt.savefig(target_path+"/"+str(index)+"_2-data-trimmed.png")
         #TOM ADDITION END
 
         # assert len(data) != 0, "ERROR, empty data after drop_start"
@@ -197,9 +197,9 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
         data = np.absolute(data)
 
         #TOM ADDITION START
-        plt.clf()
-        plt.plot(data)
-        plt.savefig(target_path+"/"+str(index)+"_3-data-absolute.png")
+        #plt.clf()
+        #plt.plot(data)
+        #plt.savefig(target_path+"/"+str(index)+"_3-data-absolute.png")
         #TOM ADDITION END
         #
         # extract/aling trace with trigger frequency + autocorrelation
