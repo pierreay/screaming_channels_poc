@@ -10,14 +10,26 @@ sudo pacman -S python-click python-scipy python-statsmodels python-sklearn pytho
 
 * Test attacks on the "small sample set"
 
-Download the dataset:
+Either download the dataset:
+
+#+begin_src tmux
+wget -O /tmp/sample_traces.tar.gz https://drive.usercontent.google.com/download?id=1raM1NZGQ65km2BWIu03-y75Gq5FqrdsT&export=download&confirm=t&uuid=92b84cd2-8ada-4126-90e6-c0c1f7779811
+#+end_src
+
+Or use the copy in this repository:
+
+#+begin_src tmux
+cp ./traces/sample_traces.tar.gz /tmp
+#+end_src
+
+Then extract the traces:
 
 #+begin_src tmux
 cd /tmp
-wget -O sample_traces.tar.gz https://drive.usercontent.google.com/download?id=1raM1NZGQ65km2BWIu03-y75Gq5FqrdsT&export=download&confirm=t&uuid=92b84cd2-8ada-4126-90e6-c0c1f7779811
 tar xzvf sample_traces.tar.gz
 rm -rf sample_traces.tar.gz
-cd sample_traces
+export TRACES_SAMPLE=/tmp/sample_traces
+cd $TRACES_SAMPLE
 ls
 #+end_src
 
