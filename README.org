@@ -5,7 +5,7 @@
 For Arch-Linux:
 
 #+begin_src tmux
-sudo pacman -S python-click python-scipy python-statsmodels python-sklearn python-scikit-learn
+sudo pacman -S python-click python-scipy python-statsmodels python-sklearn python-scikit-learn python-pycryptodome
 #+end_src
 
 * Test attacks on the "small sample set"
