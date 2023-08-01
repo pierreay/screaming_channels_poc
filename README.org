@@ -1,3 +1,5 @@
+#+TITLE: Screaming Channels Notes
+#+SETUPFILE: https://raw.githubusercontent.com/pierreay/orgcss/master/orgcss.setup
 * Install the dependencies for =attack.py=
 
 For Arch-Linux:
