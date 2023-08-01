@@ -143,6 +143,7 @@ BAUD = None
 OUTFILE = None
 RADIO = None
 RADIO_ADDRESS = None
+RADIO_ANTENNA = None
 COMMUNICATE_SLOW = None
 YKUSH_PORT = None
 
@@ -172,11 +173,13 @@ class EnumType(click.Choice):
               help="The type of SDR to use.")
 @click.option("--radio-address", default="10.0.3.40",
               help="Address of the radio (X.X.X.X for USRP, ip:X.X.X.X or usb:X.X.X for PlutoSDR).")
+@click.option("--radio-antenna", default="TX/RX",
+              help="Name of the antenna to use (USRP: [TX/RX|RX2])")
 @click.option("-l", "--loglevel", default="INFO", show_default=True,
               help="The loglevel to be used ([DEBUG|INFO|WARNING|ERROR|CRITICAL])")
 @click.option("-o", "--outfile", default="/tmp/time", type=click.Path(), show_default=True,
               help="The file to write the GNUradio trace to.")
-def cli(device, baudrate, ykush_port, slowmode, radio, radio_address,
+def cli(device, baudrate, ykush_port, slowmode, radio, radio_address, radio_antenna,
         outfile, loglevel, **kwargs):
     """
     Reproduce screaming channel experiments with vulnerable devices.
@@ -190,12 +193,13 @@ def cli(device, baudrate, ykush_port, slowmode, radio, radio_address,
     Call any experiment with "--help" for details. You most likely want to use
     "collect".
     """
-    global DEVICE, OUTFILE, RADIO, RADIO_ADDRESS, BAUD, COMMUNICATE_SLOW, YKUSH_PORT
+    global DEVICE, OUTFILE, RADIO, RADIO_ADDRESS, RADIO_ANTENNA, BAUD, COMMUNICATE_SLOW, YKUSH_PORT
     DEVICE = device
     BAUD = baudrate
     OUTFILE = outfile
     RADIO = radio
     RADIO_ADDRESS = radio_address
+    RADIO_ANTENNA = radio_antenna
     COMMUNICATE_SLOW = slowmode
     YKUSH_PORT = ykush_port
 
@@ -283,6 +287,8 @@ def save_raw(capture_file, target_path, index, name):
               help="File to write the average to (i.e. the template candidate).")
 @click.option("--plot/--no-plot", default=False, show_default=True,
               help="Plot the results of trace collection.")
+@click.option("--plot-out", type=click.Path(dir_okay=False),
+              help="File to write the plot to (instead of showing it dynamically).")
 @click.option("--max-power/--no-max-power", default=False, show_default=True,
               help="Set the output power of the device to its maximum.")
 @click.option("--raw/--no-raw", default=False, show_default=True,
@@ -749,7 +755,7 @@ def _open_serial_port():
 class GNUradio(gr.top_block):
     """GNUradio capture from SDR to file."""
     def __init__(self, frequency=2.464e9, sampling_rate=5e6, conventional=False,
-                 usrp_gain=40, hackrf_gain=0, hackrf_gain_if=40, hackrf_gain_bb=44, plutosdr_gain=64):
+                 usrp_gain=40, hackrf_gain=0, hackrf_gain_if=40, hackrf_gain_bb=44, plutosdr_gain=35):
         gr.top_block.__init__(self, "Top Block")
 
         if RADIO in (Radio.USRP, Radio.USRP_mini, Radio.USRP_B210):
@@ -760,7 +766,7 @@ class GNUradio(gr.top_block):
             radio_block.set_center_freq(frequency)
             radio_block.set_samp_rate(sampling_rate)
             radio_block.set_gain(usrp_gain)
-            radio_block.set_antenna("TX/RX")
+            radio_block.set_antenna(RADIO_ANTENNA.encode("ascii"))
         elif RADIO == Radio.USRP_B210_MIMO:
             radio_block = uhd.usrp_source(
         	",".join(('', "")),

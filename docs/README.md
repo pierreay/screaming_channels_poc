@@ -390,7 +390,7 @@ hackrf (HackRF). Follow the Gnuradio guidelines and chose the installation
 method you prefer. For example, using the packages:
 ```
 apt install gnuradio # Version 3.7, alternatively install from source.
-apt install gr-osmosdr
+apt install gr-osmosdr gr-iio
 apt install hackrf
 apt install bluez
 pip3 install gatt==0.2.7 pyzmq==17.1.2
@@ -446,7 +446,7 @@ Clone the repository.
 ```
 <!--git clone https://github.com/eurecom-s3/python-hel-->
 git clone https://github.com/giocamurati/python_hel.git
-cd python-hel
+cd python_hel
 ```
 
 Compile and install the library.
@@ -471,7 +471,7 @@ apt install ninja-build
 ```
 
 ```
-cd python-hel
+cd python_hel
 meson --buildtype release build -D aes_type=aes_ni
 # meson --buildtype release build2 -D aes_type=aes_simple
 cd build

@@ -14,7 +14,7 @@ ENV SC=/screaming_channels
 ENV PYTHONPATH=/usr/lib/python3/dist-packages:/usr/lib/python3/site-packages
 ENV LD_LIBRARY_PATH=/usr/lib
 
-RUN git clone https://www.github.com/muchlikeacat/screaming_channels
+RUN git clone https://www.github.com/pierreay/screaming_channels.git
 WORKDIR /screaming_channels
 
 

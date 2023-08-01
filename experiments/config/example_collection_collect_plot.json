@@ -1,7 +1,7 @@
 {
     "firmware": {
         "mode": "tinyaes",
-        "fixed_key": true,
+        "fixed_key": false,
         "modulate": true
     },
     "collection": {
@@ -9,12 +9,12 @@
         "hackrf_gain": 0,
         "hackrf_gain_if": 35,
         "hackrf_gain_bb": 39,
-        "plutosdr_gain": 64,
+        "plutosdr_gain": 35,
         "usrp_gain": 40,
         "target_freq": 2.528e9,
         "sampling_rate": 5e6,
         "num_points": 1,
-        "num_traces_per_point": 100,
+        "num_traces_per_point": 500,
         "bandpass_lower": 1.85e6,
         "bandpass_upper": 1.95e6,
         "lowpass_freq": 5e3,
@@ -22,7 +22,7 @@
         "trigger_rising": true,
         "trigger_offset": 100e-6,
         "signal_length": 300e-6,
-        "template_name": "templates/tiny_anechoic_5m.npy",
+        "template_name": null,
         "min_correlation": 0.00
     }
 }

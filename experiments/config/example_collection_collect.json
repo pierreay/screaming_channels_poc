@@ -1,7 +1,7 @@
 {
     "firmware": {
         "mode": "tinyaes",
-        "fixed_key": true,
+        "fixed_key": false,
         "modulate": true
     },
     "collection": {
