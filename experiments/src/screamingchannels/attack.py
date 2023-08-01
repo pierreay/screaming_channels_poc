@@ -28,8 +28,10 @@ import math
 import statsmodels.api as sm
 from sklearn.feature_selection import mutual_info_classif
 
-from .load import generic_load
-
+try:
+    from .load import generic_load
+except:
+    from load import generic_load
 
 # Configuration that applies to all attacks; set by the script entry point (cli()).
 # Plus other global variables
