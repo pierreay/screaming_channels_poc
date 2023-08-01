@@ -10,6 +10,9 @@ sudo pacman -S python-click python-scipy python-statsmodels python-sklearn pytho
 
 * Test attacks on the "small sample set"
 
+We will demonstrate the attacks on the "small sample set" of the
+[[https://eurecom-s3.github.io/screaming_channels/][EURECOM-s3.GitHub.io]] page (30 MB).
+
 Either download the dataset:
 
 #+begin_src tmux
@@ -33,7 +36,11 @@ cd $TRACES_SAMPLE
 ls
 #+end_src
 
-We can now perform a profiled correlation attack:
+The template/training set (=hackrf_20cm/attack_tx_500=) is composed of 2000
+traces with a fixed key and a variable plaintext.
+
+The template/training set (=hackrf_20cm/template_tx_500=) is composed of 5000
+traces with a variable key and a variable plaintext.
 
 #+begin_src bash :eval never
 sc-attack --norm --data-path $TRACES_SAMPLE/hackrf_20cm/attack_tx_500/ --start-point 400 --end-point 700 --num-traces 400 --bruteforce attack /tmp/sample_traces --attack-algo pcc --variable p_xor_k
