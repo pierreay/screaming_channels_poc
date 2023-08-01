@@ -1,5 +1,6 @@
 #+TITLE: Screaming Channels Notes
 #+SETUPFILE: https://raw.githubusercontent.com/pierreay/orgcss/master/orgcss.setup
+
 * Install the dependencies for =attack.py=
 
 For Arch-Linux:
@@ -42,6 +43,40 @@ traces with a fixed key and a variable plaintext.
 The template/training set (=hackrf_20cm/template_tx_500=) is composed of 5000
 traces with a variable key and a variable plaintext.
 
+** CHES20 -- Profiled Correlation Attack (PCC)
+
+1. Create a profile:
+   #+begin_src bash :eval never
+   ./attack.py --plot --norm --data-path $TRACES_SAMPLE/hackrf_20cm/template_tx_500/ --start-point 400 --end-point 700 --num-traces 5000 profile /tmp/sample_traces --pois-algo r --num-pois 2 --poi-spacing 1 --variable p_xor_k
+   #+end_src
+
+The profile will be stored in the =/tmp/sample_traces= directory:
+
+#+begin_src bash :results output :exports both
+ls -lh /tmp/sample_traces | grep .npy
+#+end_src
+
+#+RESULTS:
+: -rw-r--r-- 1 drac drac  384  1 août  16:04 POIS.npy
+: -rw-r--r-- 1 drac drac 129K  1 août  16:04 PROFILE_COVS.npy
+: -rw-r--r-- 1 drac drac  65K  1 août  16:04 PROFILE_MEANS.npy
+: -rw-r--r-- 1 drac drac 1,3K  1 août  16:04 PROFILE_MEAN_TRACE.npy
+: -rw-r--r-- 1 drac drac  38K  1 août  16:04 PROFILE_RS.npy
+: -rw-r--r-- 1 drac drac  38K  1 août  16:04 PROFILE_RZS.npy
+: -rw-r--r-- 1 drac drac  65K  1 août  16:04 PROFILE_STDS.npy
+
+2. Attack re-using the profile on only 400 traces:
+   #+begin_src bash :eval never
+   ./attack.py --norm --data-path $TRACES_SAMPLE/hackrf_20cm/attack_tx_500/ --start-point 400 --end-point 700 --num-traces 400 --bruteforce attack /tmp/sample_traces --attack-algo pcc --variable p_xor_k
+   #+end_src
+
+#+begin_example
+Best Key Guess:   40   f9   32   50   15   23   51   94   ab   b7   7d   ff   c6   5a   d0   75  
+Known Key:        40   f9   32   53   15   23   51   96   ab   b7   7c   fe   c4   5b   d1   77  
+PGE:             000  000  000  001  000  000  000  001  000  000  002  001  001  001  001  002  
+SUCCESS:           1    1    1    0    1    1    1    0    1    1    0    0    0    0    0    0  
+NUMBER OF CORRECT BYTES: 8
+#+end_example
 #+begin_src bash :eval never
 sc-attack --norm --data-path $TRACES_SAMPLE/hackrf_20cm/attack_tx_500/ --start-point 400 --end-point 700 --num-traces 400 --bruteforce attack /tmp/sample_traces --attack-algo pcc --variable p_xor_k
 #+end_src
