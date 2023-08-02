@@ -18,6 +18,12 @@ For an Arch Linux installation:
 sudo pacman -S python-click python-scipy python-statsmodels python-scikit-learn python-pycryptodome
 #+end_src
 
+Or using Pip:
+
+#+begin_src tmux
+pip3 install --break-system-packages click scipy statsmodels scikit-learn pycryptodome
+#+end_src
+
 * Test attacks on the "small sample set"
 
 We will demonstrate the attacks on the "small sample set" of the
