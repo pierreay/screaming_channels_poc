@@ -58,6 +58,18 @@ traces with a fixed key and a variable plaintext.
 The template/training set (=hackrf_20cm/template_tx_500=) is composed of 5000
 traces with a variable key and a variable plaintext.
 
+** CCS18 -- Correlation Radio Attack (CRA)
+
+This is how to launch a CRA, but it will not work on =sample_traces.tar.gz=
+because there is not enough traces.
+
+#+begin_src bash :eval never
+# Plot and adjust points.
+./attack.py --plot --data-path=$data_path --start-point=0 --end-point=0 --num-traces=1000 cra
+# Attack (use fixed key set).
+./attack.py --data-path=$data_path --start-point=0 --end-point=0 cra
+#+end_src
+
 ** CHES20 -- Profiled Correlation Attack (PCC)
 :PROPERTIES:
 :ID:       a0d85863-8434-42ca-ac7d-5f28e07ab6b2
@@ -112,3 +124,4 @@ First, create a profile just like the [[id:a0d85863-8434-42ca-ac7d-5f28e07ab6b2]
 
 The attack is longer (~ 5 minutes) but is able to retrieve 3 additional bytes
 of the key compared to the previous one.
+
