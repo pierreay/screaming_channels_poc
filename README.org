@@ -114,6 +114,9 @@ because there is not enough traces.
    #+end_example
 
 ** CHES20 -- Template Attack (PDF)
+:PROPERTIES:
+:ID:       4df90ab7-1e53-4f2e-8cfd-b5d9b7623354
+:END:
 
 First, create a profile just like the [[id:a0d85863-8434-42ca-ac7d-5f28e07ab6b2][CHES20 -- Profiled Correlation Attack
 (PCC)]] attack. Then, we can attack:
