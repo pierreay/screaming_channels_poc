@@ -1228,6 +1228,36 @@ int main(void)
     NVIC_EnableIRQ(TIMER1_IRQn);
     NVIC_EnableIRQ(CCM_AAR_IRQn);
     __enable_irq();
+
+    int j = 0;
+    while (true)
+    {
+        /* Wait with TX OFF. */
+        /* printf("TX OFF\r\n"); */
+        radio_sweep_end();
+        while (j < 2000000) {
+            j += 1;
+        }
+        j = 0;
+        /* Wait with TX ON but not AES. */
+        /* printf("TX ON\r\n"); */
+        radio_modulated_tx_carrier(txpower_, mode_, channel_start_);
+        while (j < 2000000) {
+            j += 1;
+        }
+        j = 0;
+        /* Start repeated AES. */
+        /* printf("TX ON + AES\r\n"); */
+        uint32_t num_repetitions = 500;
+        uint8_t key[16] = {0};
+        uint8_t in[16] = {0};
+        uint8_t out[16] = {0};
+        for (uint32_t i = 0; i < num_repetitions; ++i) {
+            for(uint32_t j = 0; j < 0xff; j++);
+            AES128_ECB_encrypt(in, key, out);
+        }
+    }
+
     while (true)
     {
         uint8_t control;
