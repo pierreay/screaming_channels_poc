@@ -115,8 +115,8 @@ static void generate_modulated_rf_packet(void)
 {
     uint8_t i;
 
-    NRF_RADIO->PREFIX0 = rnd8();
-    NRF_RADIO->BASE0   = rnd32();
+    NRF_RADIO->PREFIX0 = 0x0f;
+    NRF_RADIO->BASE0   = 0x0f0f0f0f;
 
     // Packet configuration:
     // S1 size = 0 bits, S0 size = 0 bytes, payload length size = 8 bits
@@ -139,7 +139,7 @@ static void generate_modulated_rf_packet(void)
     // Fill payload with random data.
     for (i = 0; i < 254; i++)
     {
-        packet[i + 1] = rnd8();
+        packet[i + 1] = 0x0f;
     }
     NRF_RADIO->PACKETPTR = (uint32_t)packet;
 }
