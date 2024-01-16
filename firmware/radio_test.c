@@ -128,7 +128,9 @@ static void generate_modulated_rf_packet(void)
     // Bit 24: 1 Big endian,
     // 4 byte base address length (5 byte full address length),
     // 0 byte static length, max 255 byte payload .
-    NRF_RADIO->PCNF1  = (RADIO_PCNF1_WHITEEN_Enabled << RADIO_PCNF1_WHITEEN_Pos) |
+    // NOTE: Disable whitening to have constant packets sent over the air.
+    /* NRF_RADIO->PCNF1  = (RADIO_PCNF1_WHITEEN_Enabled << RADIO_PCNF1_WHITEEN_Pos) | */
+    NRF_RADIO->PCNF1  = (RADIO_PCNF1_WHITEEN_Disabled << RADIO_PCNF1_WHITEEN_Pos) |
                         (RADIO_PCNF1_ENDIAN_Big << RADIO_PCNF1_ENDIAN_Pos) |
                         (4UL << RADIO_PCNF1_BALEN_Pos) |
                         (0UL << RADIO_PCNF1_STATLEN_Pos) |
