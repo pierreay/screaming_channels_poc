@@ -213,6 +213,29 @@ static void ccm_run_crypto_sync(void)
     }
 }
 
+// NOTE: Copy of ccm_test_crypto but without decryption and result check.
+static void ccm_test_crypto_encrypt_only(void)
+{
+    const uint8_t packet_size = 200; /* arbitrary */
+
+    /*
+     * Setup
+     */
+
+    ccm_enable(CCM_MODE_DATARATE_1Mbit);
+    ccm_data_in.length = packet_size;
+    for (int i = 0; i < packet_size; i++)
+        ccm_data_in.payload[i] = i;
+
+    /*
+     * Encryption
+     */
+
+    ccm_run_crypto_sync();
+
+    ccm_disable();
+}
+
 /** @brief Test the CCM crypto block.
  *
  * Run a single encryption, followed by decryption, and test that the resulting
@@ -1241,6 +1264,8 @@ int main(void)
         j = 0;
         /* Wait with TX ON but not AES. */
         /* printf("TX ON\r\n"); */
+        // NOTE: Choose between modulated packets or carrier only.
+        // radio_tx_carrier(txpower_, mode_, channel_start_);
         radio_modulated_tx_carrier(txpower_, mode_, channel_start_);
         while (j < 2000000) {
             j += 1;
@@ -1255,6 +1280,11 @@ int main(void)
         for (uint32_t i = 0; i < num_repetitions; ++i) {
             for(uint32_t j = 0; j < 0xff; j++);
             AES128_ECB_encrypt(in, key, out);
+        }
+        /* Start repeated hardware AES. */
+        for (uint32_t i = 0; i < num_repetitions; ++i) {
+            for(uint32_t j = 0; j < 0xff; j++);
+            ccm_test_crypto_encrypt_only();
         }
     }
 
