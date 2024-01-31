@@ -1216,6 +1216,69 @@ void all_off(main_state_t* state)
     }
 }
 
+#define TX_NUM_REPETITIONS 300000
+#define CO_NUM_REPETITIONS 200
+#define CO_NUM_MULT_AES_SOFT_ECB 0.3
+#define CO_NUM_MULT_AES_HARD_ECB 4
+
+void repeat_tx_off() {
+    /* printf("TX OFF\r\n"); */
+    radio_sweep_end();
+    int j = 0;
+    while (j < TX_NUM_REPETITIONS) {
+        j += 1;
+    }
+}
+void repeat_tx_carrier() {
+    /* printf("TX CARRIER ON\r\n"); */
+    radio_tx_carrier(txpower_, mode_, channel_start_);
+    int j = 0;
+    while (j < TX_NUM_REPETITIONS) {
+        j += 1;
+    }
+}
+void repeat_tx_mod() {
+    /* printf("TX MODULATED ON\r\n"); */
+    radio_modulated_tx_carrier(txpower_, mode_, channel_start_);
+    int j = 0;
+    while (j < TX_NUM_REPETITIONS) {
+        j += 1;
+    }
+}
+
+void repeat_aes_soft_ecb() {
+    /* printf("TX ON + AES\r\n"); */
+    uint8_t key[16] = {0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0};
+    uint8_t in[16]  = {0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0};
+    uint8_t out[16] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    for (uint32_t i = 0; i < CO_NUM_REPETITIONS * CO_NUM_MULT_AES_SOFT_ECB; ++i) {
+        for(uint32_t j = 0; j < 0xff; j++);
+        // NOTE: AES128-ECB implemented using TinyCrypt from Nordic SDK.
+        AES128_ECB_encrypt(in, key, out);
+    }
+}
+void repeat_aes_hard_ecb() {
+    uint8_t key[16] = {0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0};
+    uint8_t in[16]  = {0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0};
+    uint8_t out[16] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    nrf_ecb_init();
+    nrf_ecb_set_key(key);
+    for (uint32_t i = 0; i < CO_NUM_REPETITIONS * CO_NUM_MULT_AES_HARD_ECB; ++i) {
+        for(uint32_t j = 0; j < 0xff; j++);
+        // NOTE: AES128-ECB implemented using the hardware crypto block
+        // (ECB peripheral) of the nRF52.
+        nrf_ecb_crypt(out, in);
+    }
+}
+void repeat_aes_hard_ccm() {
+    for (uint32_t i = 0; i < CO_NUM_REPETITIONS; ++i) {
+        for(uint32_t j = 0; j < 0xff; j++);
+        // NOTE: AES128-CCM implemented using the hardware crypto block
+        // (CCM peripheral) of the nRF52.
+        ccm_test_crypto_encrypt_only();
+    }
+}
+
 /** @brief Function for main application entry.
  */
 int main(void)
@@ -1252,40 +1315,19 @@ int main(void)
     NVIC_EnableIRQ(CCM_AAR_IRQn);
     __enable_irq();
 
-    int j = 0;
     while (true)
     {
         /* Wait with TX OFF. */
-        /* printf("TX OFF\r\n"); */
-        radio_sweep_end();
-        while (j < 2000000) {
-            j += 1;
-        }
-        j = 0;
+        repeat_tx_off();
         /* Wait with TX ON but not AES. */
-        /* printf("TX ON\r\n"); */
-        // NOTE: Choose between modulated packets or carrier only.
-        // radio_tx_carrier(txpower_, mode_, channel_start_);
-        radio_modulated_tx_carrier(txpower_, mode_, channel_start_);
-        while (j < 2000000) {
-            j += 1;
-        }
-        j = 0;
+        repeat_tx_carrier();
+        // repeat_tx_mod()
         /* Start repeated AES. */
-        /* printf("TX ON + AES\r\n"); */
-        uint32_t num_repetitions = 500;
-        uint8_t key[16] = {0};
-        uint8_t in[16] = {0};
-        uint8_t out[16] = {0};
-        for (uint32_t i = 0; i < num_repetitions; ++i) {
-            for(uint32_t j = 0; j < 0xff; j++);
-            AES128_ECB_encrypt(in, key, out);
-        }
-        /* Start repeated hardware AES. */
-        for (uint32_t i = 0; i < num_repetitions; ++i) {
-            for(uint32_t j = 0; j < 0xff; j++);
-            ccm_test_crypto_encrypt_only();
-        }
+        repeat_aes_soft_ecb();
+        /* Start repeated hardware AES using ECB. */
+        repeat_aes_hard_ecb();
+        /* Start repeated hardware AES using CCM. */
+        repeat_aes_hard_ccm();
     }
 
     while (true)
