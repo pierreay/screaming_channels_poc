@@ -1288,6 +1288,9 @@ int main(void)
     radio_tests_t cur_test = RADIO_TEST_NOP;
     main_state_t state     = {false, false};
 
+    // Allow or not allow the DC/DC regulator to be used instead of the LDO.
+    NRF_POWER->DCDCEN = 0;
+
     init();
     const app_uart_comm_params_t comm_params =
     {
