@@ -779,6 +779,13 @@ void TIMER1_IRQHandler()
     NRF_TIMER1->EVENTS_COMPARE[0] = 0;
 }
 
+// Interrupts handler for ECB peripheral.
+// Reset the ECB registers to 0 indicating the end of ECB.
+void ECB_IRQHandler() {
+    NRF_ECB->EVENTS_ENDECB = 0;
+    NRF_ECB->EVENTS_ERRORECB = 0;
+}
+
 /*
  * @brief Function to read 16 integers from the serial line and to write them in
  * to a bytearray
@@ -1263,19 +1270,126 @@ void repeat_aes_soft_ecb() {
         AES128_ECB_encrypt(in, key, out);
     }
 }
-void repeat_aes_hard_ecb() {
+
+// NOTE: Implementation of AES ECB copying the code from the SDK but using three
+// modes in three functions:
+// 1. Waiting using a simple loop.
+// 2. Waiting using a loop incrementing a counter.
+// 3. Waiting using interrupts.
+
+static uint8_t  ecb_data2[48];   ///< ECB data structure for RNG peripheral to access.
+static uint8_t* ecb_key2;        ///< Key:        Starts at ecb_data
+static uint8_t* ecb_cleartext2;  ///< Cleartext:  Starts at ecb_data + 16 bytes.
+static uint8_t* ecb_ciphertext2; ///< Ciphertext: Starts at ecb_data + 32 bytes.
+
+void repeat_aes_hard_ecb_simple_loop_without_counter() {
     uint8_t key[16] = {0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0};
     uint8_t in[16]  = {0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0};
     uint8_t out[16] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    nrf_ecb_init();
-    nrf_ecb_set_key(key);
+    // Implementation of the nrf_ecb_init() function:
+    ecb_key2 = ecb_data2;
+    ecb_cleartext2  = ecb_data2 + 16;
+    ecb_ciphertext2 = ecb_data2 + 32;
+    NRF_ECB->ECBDATAPTR = (uint32_t)ecb_data2;
+    
+    // Implementation of the nrf_ecb_set_key(key) function:
+    memcpy(ecb_key2,key,16);
+    
     for (uint32_t i = 0; i < CO_NUM_REPETITIONS * CO_NUM_MULT_AES_HARD_ECB; ++i) {
         for(uint32_t j = 0; j < 0xff; j++);
         // NOTE: AES128-ECB implemented using the hardware crypto block
         // (ECB peripheral) of the nRF52.
-        nrf_ecb_crypt(out, in);
+        // Implementation of the nrf_ecb_crypt(out, in) function:
+        memcpy(ecb_cleartext2,in,16);
+        NRF_ECB->EVENTS_ENDECB = 0;
+        NRF_ECB->EVENTS_ERRORECB = 0;
+        NRF_ECB->TASKS_STARTECB = 1;
+        // Use a while loop without counter:
+        while (NRF_ECB->EVENTS_ENDECB == 0) {}
+        // Reset ECB registers.
+        NRF_ECB->EVENTS_ENDECB = 0;
+        NRF_ECB->EVENTS_ERRORECB = 0;
+        memcpy(out,ecb_ciphertext2,16);
     }
 }
+
+void repeat_aes_hard_ecb_simple_loop_with_counter() {
+    uint8_t key[16] = {0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0};
+    uint8_t in[16]  = {0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0};
+    uint8_t out[16] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    // Implementation of the nrf_ecb_init() function:
+    ecb_key2 = ecb_data2;
+    ecb_cleartext2  = ecb_data2 + 16;
+    ecb_ciphertext2 = ecb_data2 + 32;
+    NRF_ECB->ECBDATAPTR = (uint32_t)ecb_data2;
+    
+    // Implementation of the nrf_ecb_set_key(key) function:
+    memcpy(ecb_key2,key,16);
+    
+    for (uint32_t i = 0; i < CO_NUM_REPETITIONS * CO_NUM_MULT_AES_HARD_ECB; ++i) {
+        for(uint32_t j = 0; j < 0xff; j++);
+        // NOTE: AES128-ECB implemented using the hardware crypto block
+        // (ECB peripheral) of the nRF52.
+        // Implementation of the nrf_ecb_crypt(out, in) function:
+        uint32_t counter = 0x1000000;
+        memcpy(ecb_cleartext2,in,16);
+        NRF_ECB->EVENTS_ENDECB = 0;
+        NRF_ECB->EVENTS_ERRORECB = 0;
+        NRF_ECB->TASKS_STARTECB = 1;
+        // Use a while loop with counter:
+        while (NRF_ECB->EVENTS_ENDECB == 0) {
+            counter--;
+            if (counter == 0) {
+                return;
+            }
+        }
+        // Reset ECB registers.
+        NRF_ECB->EVENTS_ENDECB = 0;
+        NRF_ECB->EVENTS_ERRORECB = 0;
+        memcpy(out,ecb_ciphertext2,16);
+    }
+}
+
+void repeat_aes_hard_ecb_simple_loop_with_int_sleep() {
+    uint8_t key[16] = {0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0};
+    uint8_t in[16]  = {0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0};
+    uint8_t out[16] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    // Implementation of the nrf_ecb_init() function:
+    ecb_key2 = ecb_data2;
+    ecb_cleartext2  = ecb_data2 + 16;
+    ecb_ciphertext2 = ecb_data2 + 32;
+    NRF_ECB->ECBDATAPTR = (uint32_t)ecb_data2;
+    
+    // Implementation of the nrf_ecb_set_key(key) function:
+    memcpy(ecb_key2,key,16);
+
+    // Enable the ECB_IRQHandler.
+    NVIC_DisableIRQ(ECB_IRQn);
+    NRF_ECB->INTENSET = 3;
+    NVIC_ClearPendingIRQ(ECB_IRQn);
+    NVIC_EnableIRQ(ECB_IRQn);
+    
+    for (uint32_t i = 0; i < CO_NUM_REPETITIONS * CO_NUM_MULT_AES_HARD_ECB; ++i) {
+        for(uint32_t j = 0; j < 0xff; j++);
+        // NOTE: AES128-ECB implemented using the hardware crypto block
+        // (ECB peripheral) of the nRF52.
+        // Implementation of the nrf_ecb_crypt(out, in) function:
+        memcpy(ecb_cleartext2,in,16);
+        NRF_ECB->EVENTS_ENDECB = 0;
+        NRF_ECB->EVENTS_ERRORECB = 0;
+        NRF_ECB->TASKS_STARTECB = 1;
+        // Sleep for intterupts.
+        __WFE(); // Wait for an event.
+        __SEV(); // Clear the internal event register.
+        memcpy(out,ecb_ciphertext2,16);
+    }
+
+    // Disable the ECB_IRQHandler.
+    NVIC_ClearPendingIRQ(ECB_IRQn);
+    NVIC_DisableIRQ(ECB_IRQn);
+    NRF_ECB->INTENSET = 0;
+}
+
 void repeat_aes_hard_ccm() {
     for (uint32_t i = 0; i < CO_NUM_REPETITIONS; ++i) {
         for(uint32_t j = 0; j < 0xff; j++);
