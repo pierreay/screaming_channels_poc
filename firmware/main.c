@@ -1433,8 +1433,9 @@ int main(void)
     APP_ERROR_CHECK(err_code);
     bsp_board_leds_init();
     printf("RF Test\r\n");
-    NVIC_EnableIRQ(TIMER0_IRQn);
-    NVIC_EnableIRQ(TIMER1_IRQn);
+    // Disale interruptions used by Giovanni for the noisy-operation:
+    /* NVIC_EnableIRQ(TIMER0_IRQn); */
+    /* NVIC_EnableIRQ(TIMER1_IRQn); */
     NVIC_EnableIRQ(CCM_AAR_IRQn);
     __enable_irq();
 
