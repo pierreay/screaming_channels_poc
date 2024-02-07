@@ -1439,10 +1439,20 @@ int main(void)
     NVIC_EnableIRQ(CCM_AAR_IRQn);
     __enable_irq();
 
+    // Handle GPIO for triggering.
+    // Setup the GPIO #11:
+	/* NRF_P0->PIN_CNF[11] = (GPIO_PIN_CNF_SENSE_Disabled << GPIO_PIN_CNF_SENSE_Pos) */
+    /*     | (GPIO_PIN_CNF_DRIVE_S0S1 << GPIO_PIN_CNF_DRIVE_Pos) */
+    /*     | (GPIO_PIN_CNF_PULL_Pulldown << GPIO_PIN_CNF_PULL_Pos) */
+    /*     | (GPIO_PIN_CNF_INPUT_Connect << GPIO_PIN_CNF_INPUT_Pos) */
+    /*     | (GPIO_PIN_CNF_DIR_Output << GPIO_PIN_CNF_DIR_Pos); */
+
     while (true)
     {
         /* Wait with TX OFF. */
         repeat_tx_off();
+        // Turn GPIO ON for triggering.
+        // NRF_P0->OUTSET = (1ul << 11);
         /* Wait with TX ON but not AES. */
         repeat_tx_carrier();
         // repeat_tx_mod()
@@ -1452,6 +1462,8 @@ int main(void)
         repeat_aes_hard_ecb();
         /* Start repeated hardware AES using CCM. */
         repeat_aes_hard_ccm();
+        // Turn GPIO OFF after triggering.
+        // NRF_P0->OUTCLR = (1ul << 11);
     }
 
     while (true)
