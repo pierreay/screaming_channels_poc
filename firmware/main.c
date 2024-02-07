@@ -135,7 +135,8 @@ typedef struct
 } ccm_config_t;
 
 static ccm_config_t ccm_config = {
-    {0xaa},                     /* Key.       */
+    /* Key. */
+    {0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0},
     {0},                        /* Counter.   */
     {0},                        /* Ignored.   */
     0,                          /* Direction. */
@@ -224,8 +225,13 @@ static void ccm_test_crypto_encrypt_only(void)
 
     ccm_enable(CCM_MODE_DATARATE_1Mbit);
     ccm_data_in.length = packet_size;
-    for (int i = 0; i < packet_size; i++)
-        ccm_data_in.payload[i] = i;
+
+    /* for (int i = 0; i < packet_size; i++) */
+    /*     ccm_data_in.payload[i] = i; */
+    // Replace the loop using counter as plaintext by a fixed plaintext using memcpy as un ECB.
+    uint8_t in[16]  = {0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0};
+    memcpy(ccm_data_in.payload, in, 16);
+    // The key is defined in the `ccm_config' variable.
 
     /*
      * Encryption
