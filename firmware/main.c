@@ -1459,7 +1459,9 @@ int main(void)
         /* Start repeated AES. */
         repeat_aes_soft_ecb();
         /* Start repeated hardware AES using ECB. */
-        repeat_aes_hard_ecb();
+        repeat_aes_hard_ecb_simple_loop_without_counter();
+        // repeat_aes_hard_ecb_simple_loop_with_counter();
+        repeat_aes_hard_ecb_simple_loop_with_int_sleep();
         /* Start repeated hardware AES using CCM. */
         repeat_aes_hard_ccm();
         // Turn GPIO OFF after triggering.
