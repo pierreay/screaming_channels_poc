@@ -15,9 +15,6 @@ from Crypto.Cipher import AES
 import zmq
 import subprocess
 
-from gnuradio import blocks, gr, uhd, iio
-import osmosdr
-
 import numpy as np
 
 from . import analyze
@@ -751,99 +748,99 @@ def _open_serial_port():
     l.debug("Opening serial port")
     return serial.Serial(DEVICE, BAUD, timeout=5)
 
+# NOTE: Deprecated because we now use SoapySDR.
+# class GNUradio(gr.top_block):
+#     """GNUradio capture from SDR to file."""
+#     def __init__(self, frequency=2.464e9, sampling_rate=5e6, conventional=False,
+#                  usrp_gain=40, hackrf_gain=0, hackrf_gain_if=40, hackrf_gain_bb=44, plutosdr_gain=35):
+#         gr.top_block.__init__(self, "Top Block")
 
-class GNUradio(gr.top_block):
-    """GNUradio capture from SDR to file."""
-    def __init__(self, frequency=2.464e9, sampling_rate=5e6, conventional=False,
-                 usrp_gain=40, hackrf_gain=0, hackrf_gain_if=40, hackrf_gain_bb=44, plutosdr_gain=35):
-        gr.top_block.__init__(self, "Top Block")
-
-        if RADIO in (Radio.USRP, Radio.USRP_mini, Radio.USRP_B210):
-            radio_block = uhd.usrp_source(
-                ("addr=" + RADIO_ADDRESS.encode("ascii"))
-                if RADIO == Radio.USRP else "",
-                uhd.stream_args(cpu_format="fc32", channels=[0]))
-            radio_block.set_center_freq(frequency)
-            radio_block.set_samp_rate(sampling_rate)
-            radio_block.set_gain(usrp_gain)
-            radio_block.set_antenna(RADIO_ANTENNA.encode("ascii"))
-        elif RADIO == Radio.USRP_B210_MIMO:
-            radio_block = uhd.usrp_source(
-        	",".join(('', "")),
-        	uhd.stream_args(
-        		cpu_format="fc32",
-        		channels=list(range(2)),
-        	),
-            )
-            radio_block.set_samp_rate(sampling_rate)
-            radio_block.set_center_freq(frequency, 0)
-            radio_block.set_gain(usrp_gain, 0)
-            radio_block.set_antenna('RX2', 0)
-            radio_block.set_bandwidth(sampling_rate/2, 0)
-            radio_block.set_center_freq(frequency, 1)
-            radio_block.set_gain(usrp_gain, 1)
-            radio_block.set_antenna('RX2', 1)
-            radio_block.set_bandwidth(sampling_rate/2, 1)
+#         if RADIO in (Radio.USRP, Radio.USRP_mini, Radio.USRP_B210):
+#             radio_block = uhd.usrp_source(
+#                 ("addr=" + RADIO_ADDRESS.encode("ascii"))
+#                 if RADIO == Radio.USRP else "",
+#                 uhd.stream_args(cpu_format="fc32", channels=[0]))
+#             radio_block.set_center_freq(frequency)
+#             radio_block.set_samp_rate(sampling_rate)
+#             radio_block.set_gain(usrp_gain)
+#             radio_block.set_antenna(RADIO_ANTENNA.encode("ascii"))
+#         elif RADIO == Radio.USRP_B210_MIMO:
+#             radio_block = uhd.usrp_source(
+#         	",".join(('', "")),
+#         	uhd.stream_args(
+#         		cpu_format="fc32",
+#         		channels=list(range(2)),
+#         	),
+#             )
+#             radio_block.set_samp_rate(sampling_rate)
+#             radio_block.set_center_freq(frequency, 0)
+#             radio_block.set_gain(usrp_gain, 0)
+#             radio_block.set_antenna('RX2', 0)
+#             radio_block.set_bandwidth(sampling_rate/2, 0)
+#             radio_block.set_center_freq(frequency, 1)
+#             radio_block.set_gain(usrp_gain, 1)
+#             radio_block.set_antenna('RX2', 1)
+#             radio_block.set_bandwidth(sampling_rate/2, 1)
  
-        elif RADIO == Radio.HackRF or RADIO == Radio.bladeRF:
-            mysdr = str(RADIO).split(".")[1].lower() #get "bladerf" or "hackrf"
-            radio_block = osmosdr.source(args="numchan=1 "+mysdr+"=0")
-            radio_block.set_center_freq(frequency, 0)
-            radio_block.set_sample_rate(sampling_rate)
-            # TODO tune parameters
-            radio_block.set_freq_corr(0, 0)
-            radio_block.set_dc_offset_mode(True, 0)
-            radio_block.set_iq_balance_mode(True, 0)
-            radio_block.set_gain_mode(True, 0)
-            radio_block.set_gain(hackrf_gain, 0)
-            if conventional:
-                # radio_block.set_if_gain(27, 0)
-                # radio_block.set_bb_gain(30, 0)
-                radio_block.set_if_gain(25, 0)
-                radio_block.set_bb_gain(27, 0)
-            else:
-                radio_block.set_if_gain(hackrf_gain_if, 0)
-                radio_block.set_bb_gain(hackrf_gain_bb, 0)
-            radio_block.set_antenna('', 0)
-            radio_block.set_bandwidth(3e6, 0)
+#         elif RADIO == Radio.HackRF or RADIO == Radio.bladeRF:
+#             mysdr = str(RADIO).split(".")[1].lower() #get "bladerf" or "hackrf"
+#             radio_block = osmosdr.source(args="numchan=1 "+mysdr+"=0")
+#             radio_block.set_center_freq(frequency, 0)
+#             radio_block.set_sample_rate(sampling_rate)
+#             # TODO tune parameters
+#             radio_block.set_freq_corr(0, 0)
+#             radio_block.set_dc_offset_mode(True, 0)
+#             radio_block.set_iq_balance_mode(True, 0)
+#             radio_block.set_gain_mode(True, 0)
+#             radio_block.set_gain(hackrf_gain, 0)
+#             if conventional:
+#                 # radio_block.set_if_gain(27, 0)
+#                 # radio_block.set_bb_gain(30, 0)
+#                 radio_block.set_if_gain(25, 0)
+#                 radio_block.set_bb_gain(27, 0)
+#             else:
+#                 radio_block.set_if_gain(hackrf_gain_if, 0)
+#                 radio_block.set_bb_gain(hackrf_gain_bb, 0)
+#             radio_block.set_antenna('', 0)
+#             radio_block.set_bandwidth(3e6, 0)
             
-        elif RADIO == Radio.PlutoSDR:
-            bandwidth = 3e6
-            radio_block = iio.pluto_source(RADIO_ADDRESS.encode("ascii"),
-                                           int(frequency), int(sampling_rate),
-                                           1 - 1, int(bandwidth), 0x8000, True,
-                                           True, True, "manual", plutosdr_gain,
-                                           '', True)
-        else:
-            raise Exception("Radio type %s is not supported" % RADIO)
+#         elif RADIO == Radio.PlutoSDR:
+#             bandwidth = 3e6
+#             radio_block = iio.pluto_source(RADIO_ADDRESS.encode("ascii"),
+#                                            int(frequency), int(sampling_rate),
+#                                            1 - 1, int(bandwidth), 0x8000, True,
+#                                            True, True, "manual", plutosdr_gain,
+#                                            '', True)
+#         else:
+#             raise Exception("Radio type %s is not supported" % RADIO)
 
 
-        self._file_sink = blocks.file_sink(gr.sizeof_gr_complex, OUTFILE)
-        print(radio_block)
-        print(self._file_sink)
-        self.connect((radio_block, 0), (self._file_sink, 0))
+#         self._file_sink = blocks.file_sink(gr.sizeof_gr_complex, OUTFILE)
+#         print(radio_block)
+#         print(self._file_sink)
+#         self.connect((radio_block, 0), (self._file_sink, 0))
 
-        if RADIO == Radio.USRP_B210_MIMO:
-            self._file_sink_2 = blocks.file_sink(gr.sizeof_gr_complex,
-            OUTFILE+"_2")
-            self.connect((radio_block, 1), (self._file_sink_2, 0))
+#         if RADIO == Radio.USRP_B210_MIMO:
+#             self._file_sink_2 = blocks.file_sink(gr.sizeof_gr_complex,
+#             OUTFILE+"_2")
+#             self.connect((radio_block, 1), (self._file_sink_2, 0))
 
 
-    def reset_trace(self):
-        """
-        Remove the current trace file and get ready for a new trace.
-        """
-        self._file_sink.open(OUTFILE)
+#     def reset_trace(self):
+#         """
+#         Remove the current trace file and get ready for a new trace.
+#         """
+#         self._file_sink.open(OUTFILE)
         
-        if RADIO == Radio.USRP_B210_MIMO:
-            self._file_sink_2.open(OUTFILE+"_2")
+#         if RADIO == Radio.USRP_B210_MIMO:
+#             self._file_sink_2.open(OUTFILE+"_2")
 
-    def __enter__(self):
-        self.start()
-        return self
+#     def __enter__(self):
+#         self.start()
+#         return self
 
-    def __exit__(self, *args):
-        self.stop()
+#     def __exit__(self, *args):
+#         self.stop()
 
 
 if __name__ == "__main__":
