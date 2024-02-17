@@ -294,7 +294,7 @@ def save_raw(capture_file, target_path, index, name):
               help="Plot the results of trace collection.")
 @click.option("-p", "--set-power", default=0, show_default=True,
               help="If set, sets the device to a specific power level (overrides --max-power)")
-def collect(config, target_path, name, average_out, plot, max_power, raw, saveplot, set_power):
+def collect(config, target_path, name, average_out, plot, plot_out, max_power, raw, saveplot, set_power):
     """
     Collect traces for an attack.
 
