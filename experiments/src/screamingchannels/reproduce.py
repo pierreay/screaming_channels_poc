@@ -19,6 +19,9 @@ import numpy as np
 
 from . import analyze
 
+import lib.load as load
+import lib.soapysdr as soapysdr
+
 logging.basicConfig()
 l = logging.getLogger('reproduce')
 
@@ -176,7 +179,7 @@ class EnumType(click.Choice):
               help="Name of the antenna to use (USRP: [TX/RX|RX2])")
 @click.option("-l", "--loglevel", default="INFO", show_default=True,
               help="The loglevel to be used ([DEBUG|INFO|WARNING|ERROR|CRITICAL])")
-@click.option("-o", "--outfile", default="/tmp/time", type=click.Path(), show_default=True,
+@click.option("-o", "--outfile", default="/tmp/raw_0_0.npy", type=click.Path(), show_default=True,
               help="The file to write the GNUradio trace to.")
 def cli(device, baudrate, ykush_port, slowmode, radio, radio_address, radio_antenna,
         outfile, loglevel, **kwargs):
@@ -481,16 +484,9 @@ def collect(config, target_path, name, average_out, plot, plot_out, max_power, r
             ser.write(('%d\r\n' % firmware_config.mask_mode).encode())
             print((ser.readline()))
 
-
-        l.debug('Starting GNUradio')
-        gnuradio = GNUradio(collection_config.target_freq,
-                            collection_config.sampling_rate,
-                            firmware_config.conventional,
-                            collection_config.usrp_gain,
-                            collection_config.hackrf_gain,
-                            collection_config.hackrf_gain_if,
-                            collection_config.hackrf_gain_bb,
-                            collection_config.plutosdr_gain)
+        # Initialize the radio client.
+        radio = soapysdr.MySoapySDRsClient()
+            
         # with click.progressbar(plaintexts) as bar:
             # for index, plaintext in enumerate(bar):
         with click.progressbar(list(range(num_points))) as bar:
@@ -505,7 +501,8 @@ def collect(config, target_path, name, average_out, plot, plot_out, max_power, r
                     else:
                         _send_plaintext(ser, plaintexts[index])
 
-                gnuradio.start()
+                # Start non-blocking recording for a pre-configured duration.
+                radio.record_start()
                 time.sleep(0.03)
 
                 if RADIO == Radio.USRP_B210_MIMO or RADIO == Radio.USRP_B210:
@@ -523,8 +520,11 @@ def collect(config, target_path, name, average_out, plot, plot_out, max_power, r
                         ser.write(firmware_mode.action_command.encode()) # single action
 
                 time.sleep(0.09)
-                gnuradio.stop()
-                gnuradio.wait()
+                # Wait the end of the recording.
+                radio.record_stop()
+                # Save on-disk and reinit the radio for future recording.
+                radio.accept()
+                radio.save()
 
                 trace = analyze.extract(OUTFILE, collection_config, average_out, plot, target_path, saveplot, index)
                 
@@ -566,14 +566,16 @@ def collect(config, target_path, name, average_out, plot, plot_out, max_power, r
                     np.save(os.path.join(target_path,"avg_%s_%d.npy"%(name,index)),trace)
                     if raw:
                         save_raw(OUTFILE, target_path, index, name)
-                gnuradio.reset_trace()
 
         ser.write(b'q')     # quit tiny_aes mode
         print((ser.readline()))
         ser.write(b'e')     # turn off continuous wave
-        
+
         time.sleep(1)
         ser.close()
+
+        # Quit the server.
+        radio.quit()
 
 @cli.command()
 @click.argument("config", type=click.File())
