@@ -9,6 +9,12 @@ TARGET_PATH=/tmp/collect
 
 # ** Configuration
 
+function configure_param_json_escape_path() {
+    # 1. Substitute "/" to "\/".
+    # 2. Add '"' around string.
+    echo \"${1//\//\\/}\"
+}
+
 function configure_param_json() {
     config_file="$1"
     param_name="$2"
@@ -29,8 +35,9 @@ function configure_json_collect() {
     export CONFIG_JSON_PATH_DST=$TARGET_PATH/example_collection_collect.json
     cp $CONFIG_JSON_PATH_SRC $CONFIG_JSON_PATH_DST
     configure_param_json $CONFIG_JSON_PATH_DST "trigger_threshold" "90e3"
-    configure_param_json $CONFIG_JSON_PATH_DST "num_points" "4000"
+    configure_param_json $CONFIG_JSON_PATH_DST "num_points" "750"
     configure_param_json $CONFIG_JSON_PATH_DST "fixed_key" "false"
+    configure_param_json $CONFIG_JSON_PATH_DST "template_name" "$(configure_param_json_escape_path $TARGET_PATH/template.npy)"
 }
 
 # ** Instrumentation
@@ -53,11 +60,11 @@ function record() {
     sleep 10
 
     # Start collection and plot result.
-    sc-experiment --loglevel=DEBUG --radio=USRP --device=$(nrfjprog --com | cut - -d " " -f 5) -o $HOME/storage/tmp/raw_0_0.npy collect $CONFIG_JSON_PATH_DST $TARGET_PATH $plot
+    sc-experiment --loglevel=DEBUG --radio=USRP --device=$(nrfjprog --com | cut - -d " " -f 5) -o $HOME/storage/tmp/raw_0_0.npy collect $CONFIG_JSON_PATH_DST $TARGET_PATH $plot --average-out=$TARGET_PATH/template.npy
 }
 
 function analyze_only() {
-    sc-experiment --loglevel=DEBUG --radio=USRP --device=$(nrfjprog --com | cut - -d " " -f 5) -o $HOME/storage/tmp/raw_0_0.npy extract $CONFIG_JSON_PATH_DST $TARGET_PATH --plot
+    sc-experiment --loglevel=DEBUG --radio=USRP --device=$(nrfjprog --com | cut - -d " " -f 5) -o $HOME/storage/tmp/raw_0_0.npy extract $CONFIG_JSON_PATH_DST $TARGET_PATH --plot --average-out=$TARGET_PATH/template.npy
 }
 
 # * Script
@@ -65,7 +72,7 @@ function analyze_only() {
 # Create collection directory.
 mkdir -p $TARGET_PATH
 
-# ** Configure
+# ** Configure the extraction / Template generation
 
 # DONE: Set the JSON configuration file for one recording analysis.
 # configure_json_plot
@@ -74,6 +81,11 @@ mkdir -p $TARGET_PATH
 # record --plot
 # DONE: Once the recording is good, use this to configure the analysis.
 # analyze_only
+
+if [[ ! -f $TARGET_PATH/template.npy ]]; then
+    echo "Template has not been created! (no file at $TARGET_PATH/template.npy)"
+    exit 1
+fi
 
 # ** Collect
 
