@@ -1023,7 +1023,7 @@ def tra_create(template_dir, num_pois, poi_spacing):
         if not path.isdir(template_dir):
             raise
 
-    if WAIT:
+    if WAIT :
         print("Loading complete")
         input("Press any key to start\n")
  
@@ -1119,7 +1119,7 @@ def tra_attack(template_dir):
     location of a previously created template with compatible settings (e.g.
     same trace length).
     """
-    if WAIT:
+    if WAIT :
         print("Loading complete")
         input("Press any key to start")
         
@@ -1211,7 +1211,7 @@ def cra():
     global LOG_PROBA
     LOG_PROBA = [[0 for r in range(256)] for bnum in range(NUM_KEY_BYTES)]
     
-    if WAIT:
+    if WAIT :
         print("Loading complete")
         input("Press any key to start")
  

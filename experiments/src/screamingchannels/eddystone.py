@@ -165,7 +165,6 @@ context = zmq.Context()
 socket = context.socket(zmq.REQ)
 socket.connect("tcp://127.0.0.1:7777")
 
-# TODO: make the mac address configurable
 device = AnyDevice(mac_address='d4:37:ce:01:da:52', manager=manager)
 # device = AnyDevice(mac_address='DB:32:09:DE:F9:26', manager=manager)
 # device = AnyDevice(mac_address='DF:14:A5:02:10:0A', manager=manager)

@@ -594,7 +594,6 @@ def eddystone_unlock_collect(config, target_path, name, average_out, plot, max_p
     socket.bind("tcp://127.0.0.1:7777")
 
     # start the ble dongle
-    # TODO: install eddystone in a known path
     subprocess.Popen(["python3", "./src/screamingchannels/eddystone.py"])
 
     print((socket.recv()))
