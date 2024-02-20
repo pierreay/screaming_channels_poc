@@ -106,6 +106,10 @@ def find_starts(config, data, target_path, index):
     else:
         trigger_fn = lambda x, y: x < y
 
+    if config.trigger_threshold is not None and config.trigger_threshold > 0:
+        print("Use config trigger treshold instead of average")
+        average = config.trigger_threshold / 100 # NOTE: / 100 because of *100 in plot_results().
+
     # The cryptic numpy code below is equivalent to looping over the signal and
     # recording the indices where the trigger crosses the average value in the
     # direction specified by config.trigger_rising. It is faster than a Python

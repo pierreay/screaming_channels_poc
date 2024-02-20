@@ -110,6 +110,8 @@ CollectionConfig = collections.namedtuple(
         "trigger_offset",
         # True for triggering on a rising edge, False otherwise.
         "trigger_rising",
+        # Threshold used for triggering instead of average.
+        "trigger_threshold",
         # Length of the signal portion to keep, in seconds, starting at
         # trigger - trigger_offset.
         "signal_length",
