@@ -11,6 +11,10 @@ from scipy import signal
 from scipy.signal import butter, lfilter
 import peakutils
 
+import lib.load as load
+import lib.soapysdr as soapysdr
+
+
 #
 # Filter creation functions taken from https://stackoverflow.com/a/12233959
 #
@@ -148,9 +152,8 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
     template candidate).
     """
     try:
-        
-        with open(capture_file) as f:
-            data = np.fromfile(f, dtype=np.complex64)
+        # Load data from custom dtype.
+        data = soapysdr.MySoapySDR.numpy_load(capture_file)
 
         # assert len(data) != 0, "ERROR, empty data just after measuring"
         if len(data) == 0:
