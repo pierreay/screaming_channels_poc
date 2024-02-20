@@ -344,6 +344,8 @@ def plot_results(config, data, trigger, trigger_average, starts, traces, target_
         window=mlab.window_hanning, noverlap=127, cmap=None, xextent=None,
         pad_to=None, sides='default', scale_by_freq=None, mode='default',
         scale='default')
+    plt.axhline(y=config.bandpass_lower, color='b', lw=0.2)
+    plt.axhline(y=config.bandpass_upper, color='b', lw=0.2)
     plt.title("Spectrogram")
     plt.xlabel("time [s]")
     plt.ylabel("frequency [Hz]")
