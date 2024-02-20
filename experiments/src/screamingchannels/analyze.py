@@ -202,6 +202,7 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
         # return fdemod
         # data = fdemod
 
+        # TODO: Use absolute for analysis but use complex for saving!
         data = np.absolute(data)
 
         #TOM ADDITION START
