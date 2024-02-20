@@ -17,16 +17,28 @@ function configure_param_json() {
     sed -i "s/\"${param_name}\": .*,/\"${param_name}\": ${param_value},/g" "$config_file"
 }
 
-function configure_json() {
+function configure_json_plot() {
     export CONFIG_JSON_PATH_SRC=$PROJECT_PATH/experiments/config/example_collection_collect_plot.json
     export CONFIG_JSON_PATH_DST=$TARGET_PATH/example_collection_collect_plot.json
     cp $CONFIG_JSON_PATH_SRC $CONFIG_JSON_PATH_DST
     configure_param_json $CONFIG_JSON_PATH_DST "trigger_threshold" "90e3"
 }
 
+function configure_json_collect() {
+    export CONFIG_JSON_PATH_SRC=$PROJECT_PATH/experiments/config/example_collection_collect_plot.json
+    export CONFIG_JSON_PATH_DST=$TARGET_PATH/example_collection_collect.json
+    cp $CONFIG_JSON_PATH_SRC $CONFIG_JSON_PATH_DST
+    configure_param_json $CONFIG_JSON_PATH_DST "trigger_threshold" "90e3"
+    configure_param_json $CONFIG_JSON_PATH_DST "num_points" "4000"
+    configure_param_json $CONFIG_JSON_PATH_DST "fixed_key" "false"
+}
+
 # ** Instrumentation
 
-function record_and_analyze() {
+function record() {
+    plot=$1
+    echo "plot=$plot"
+    
     # Kill previously started radio server.
     pkill radio.py
 
@@ -41,7 +53,7 @@ function record_and_analyze() {
     sleep 10
 
     # Start collection and plot result.
-    sc-experiment --loglevel=DEBUG --radio=USRP --device=$(nrfjprog --com | cut - -d " " -f 5) -o $HOME/storage/tmp/raw_0_0.npy collect $CONFIG_JSON_PATH_DST $TARGET_PATH --plot
+    sc-experiment --loglevel=DEBUG --radio=USRP --device=$(nrfjprog --com | cut - -d " " -f 5) -o $HOME/storage/tmp/raw_0_0.npy collect $CONFIG_JSON_PATH_DST $TARGET_PATH $plot
 }
 
 function analyze_only() {
@@ -53,10 +65,20 @@ function analyze_only() {
 # Create collection directory.
 mkdir -p $TARGET_PATH
 
-# Set the JSON configuration file.
-configure_json
+# ** Configure
 
-# Use this once to record a trace. 
-record_and_analyze
-# Once the recording is good, use this to configure the analysis.
-analyze_only
+# DONE: Set the JSON configuration file for one recording analysis.
+# configure_json_plot
+
+# DONE: Use this once to record a trace. 
+# record --plot
+# DONE: Once the recording is good, use this to configure the analysis.
+# analyze_only
+
+# ** Collect
+
+# PROG: Set the JSON configuration file for collection.
+configure_json_collect
+
+# PROG: Collect a set of profile traces.
+record --no-plot
