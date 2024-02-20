@@ -277,6 +277,40 @@ def save_raw(capture_file, target_path, index, name):
         data = np.fromfile(f, dtype=np.complex64)
     np.save(os.path.join(target_path,"raw_%s_%d.npy"%(name,index)),data)
 
+# NOTE: Quick and dirty copy and modification of collect().
+@cli.command()
+@click.argument("config", type=click.File())
+@click.argument("target-path", type=click.Path(exists=True, file_okay=False))
+@click.option("--name", default="",
+              help="Identifier for the experiment (obsolete; only for compatibility).")
+@click.option("--average-out", type=click.Path(dir_okay=False),
+              help="File to write the average to (i.e. the template candidate).")
+@click.option("--plot/--no-plot", default=False, show_default=True,
+              help="Plot the results of trace collection.")
+@click.option("--plot-out", type=click.Path(dir_okay=False),
+              help="File to write the plot to (instead of showing it dynamically).")
+@click.option("--max-power/--no-max-power", default=False, show_default=True,
+              help="Set the output power of the device to its maximum.")
+@click.option("--raw/--no-raw", default=False, show_default=True,
+              help="Save the raw IQ data.")
+@click.option("--saveplot/--no-saveplot", default=False, show_default=True,
+              help="Plot the results of trace collection.")
+@click.option("-p", "--set-power", default=0, show_default=True,
+              help="If set, sets the device to a specific power level (overrides --max-power)")
+def extract(config, target_path, name, average_out, plot, plot_out, max_power, raw, saveplot, set_power):
+    """Analyze previous collect."""
+    cfg_dict = json.load(config)
+    cfg_dict["collection"].setdefault('traces_per_point_multiplier', 1.2)
+    cfg_dict["collection"].setdefault('hackrf_gain', 0)
+    cfg_dict["collection"].setdefault('hackrf_gain_bb', 44)
+    cfg_dict["collection"].setdefault('hackrf_gain_if', 40)
+    cfg_dict["collection"].setdefault('plutosdr_gain', 64)
+    cfg_dict["collection"].setdefault('usrp_gain', 40)
+    cfg_dict["collection"].setdefault('keep_all', False)
+    cfg_dict["collection"].setdefault('channel', 0)
+    collection_config = CollectionConfig(**cfg_dict["collection"])
+    trace = analyze.extract(OUTFILE, collection_config, average_out, plot, target_path, saveplot, index=0)
+
 @cli.command()
 @click.argument("config", type=click.File())
 @click.argument("target-path", type=click.Path(exists=True, file_okay=False))
