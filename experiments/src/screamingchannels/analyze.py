@@ -2,7 +2,6 @@
 import numpy as np
 
 import matplotlib
-matplotlib.use( 'tkagg' )
 
 from matplotlib import pyplot as plt
 from matplotlib import mlab
