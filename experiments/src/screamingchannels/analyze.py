@@ -9,7 +9,6 @@ from matplotlib import mlab
 
 from scipy import signal
 from scipy.signal import butter, lfilter
-import peakutils
 
 import lib.load as load
 import lib.soapysdr as soapysdr
@@ -245,44 +244,6 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
             shift = np.argmax(correlation) - (len(template)-1)
             traces.append(data[start+shift:stop+shift])
 
-        # Reject outliers for each point in time.
-        #
-        # We reject a fixed number; while basing the decision on the standard
-        # deviation would be nicer, we can't implement it with efficient numpy
-        # operations: discarding a variable number of elements per column would not
-        # yield a proper matrix again, so we'd need a Python loop...
-        #
-        # It should be enough to discard high values and keep everything on the low
-        # side because interference always increases the energy (assuming that our
-        # alignment is correct).
-        # histo, bins = np.histogram(traces, bins=50)
-        # arg = np.array(peakutils.indexes(histo, thres=0))
-        # binmax = bins[arg]
-        # maxima = histo[arg]
-        # mode = binmax[np.argmax(maxima)]
-        # reject_low = np.min(traces)
-        # reject_high = np.max(traces)
-        # if len(maxima) > 1:
-            # low = min(binmax)
-            # # high = max(binmax)
-            # if low < mode:
-                # reject_low = (mode - low) / 2.2
-            # # if high > mode:
-                # # reject_high = (high - mode) / 2
-        # print binmax
-        # plt.plot(binmax, maxima, '*')
-        # plt.plot(bins[:-1], histo);
-        # plt.show()
-        # plt.plot(np.asarray(traces).T, '*')
-        # plt.axhline(y=mode)
-        # plt.axhline(y=reject_low)
-        # plt.axhline(y=reject_high)
-        # plt.show()
-
-        # num_reject = int(0.05 * len(traces))
-        # points = np.asarray(traces).T
-        # points.sort()
-        # avg = points[:, num_reject:(len(traces) - num_reject)].mean(axis=1)
         avg = np.average(traces, axis=0)
 
         if np.shape(avg) == ():

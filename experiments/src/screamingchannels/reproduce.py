@@ -528,44 +528,9 @@ def collect(config, target_path, name, average_out, plot, plot_out, max_power, r
 
                 trace = analyze.extract(OUTFILE, collection_config, average_out, plot, target_path, saveplot, index)
                 
-                if RADIO == Radio.USRP_B210_MIMO:
-                    trace_2 = analyze.extract(OUTFILE+"_2", collection_config, average_out, plot)
-                
-                    np.save(os.path.join(target_path,"avg_%s_ch1_%d.npy"%(name,index)),np.average(trace,
-                        axis=0))
-                    np.save(os.path.join(target_path,"avg_%s_ch2_%d.npy"%(name,index)),np.average(trace_2,
-                        axis=0))
-                
-                    # from matplotlib import pyplot as plt
-                    for i in range(min(len(trace), len(trace_2))):
-                        t1 = trace[i]
-                        t2 = trace_2[i]
-                        if np.shape(t1) == () or np.shape(t2) == ():
-                            t1 = 0
-                            t2 = 0
-                        trace_2[i] = t1 + t2
-                        t1 = t1 * np.average(t1) / np.std(t1)
-                        t2 = t2 * np.average(t2) / np.std(t2)
-                        trace[i] = t1 + t2
-                        # plt.plot(trace[i])
-                    # plt.plot(np.average(trace, axis=0), 'g')
-                    # plt.plot(np.average(trace_2, axis=0), 'r')
-                    # plt.show()
-                    
-                    # trace_3 = np.add(trace, trace_2)
-
-                if RADIO == Radio.USRP_B210_MIMO:
-                    np.save(os.path.join(target_path,"avg_%s_mr_%d.npy"%(name,index)),np.average(trace,
-                        axis=0))
-                    np.save(os.path.join(target_path,"avg_%s_eg_%d.npy"%(name,index)),np.average(trace_2,
-                        axis=0))
-                    if raw:
-                        save_raw(OUTFILE, target_path, index, name+"_ch1")
-                        save_raw(OUTFILE+"_2", target_path, index, name+"_ch2")
-                else:
-                    np.save(os.path.join(target_path,"avg_%s_%d.npy"%(name,index)),trace)
-                    if raw:
-                        save_raw(OUTFILE, target_path, index, name)
+                np.save(os.path.join(target_path,"avg_%s_%d.npy"%(name,index)),trace)
+                if raw:
+                    save_raw(OUTFILE, target_path, index, name)
 
         ser.write(b'q')     # quit tiny_aes mode
         print((ser.readline()))

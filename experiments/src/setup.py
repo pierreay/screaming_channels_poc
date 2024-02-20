@@ -30,7 +30,6 @@ setup(
         "future==0.18.2",
         "pycryptodome==3.15.0",
         "pyzmq==24.0.0",
-        "peakutils==1.3.4",
         "tabulate==0.8.10",
         "kiwisolver==1.4.4",
         "pyparsing==3.0.9"
