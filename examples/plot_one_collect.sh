@@ -7,6 +7,25 @@ TARGET_PATH=/tmp/collect
 
 # * Functions
 
+# ** Configuration
+
+function configure_param_json() {
+    config_file="$1"
+    param_name="$2"
+    param_value="$3"
+    echo "$config_file: $param_name=$param_value"
+    sed -i "s/\"${param_name}\": .*,/\"${param_name}\": ${param_value},/g" "$config_file"
+}
+
+function configure_json() {
+    export CONFIG_JSON_PATH_SRC=$PROJECT_PATH/experiments/config/example_collection_collect_plot.json
+    export CONFIG_JSON_PATH_DST=$TARGET_PATH/example_collection_collect_plot.json
+    cp $CONFIG_JSON_PATH_SRC $CONFIG_JSON_PATH_DST
+    configure_param_json $CONFIG_JSON_PATH_DST "trigger_threshold" "90e3"
+}
+
+# ** Instrumentation
+
 function record_and_analyze() {
     # Kill previously started radio server.
     pkill radio.py
@@ -22,18 +41,22 @@ function record_and_analyze() {
     sleep 10
 
     # Start collection and plot result.
-    sc-experiment --loglevel=DEBUG --radio=USRP --device=$(nrfjprog --com | cut - -d " " -f 5) -o $HOME/storage/tmp/raw_0_0.npy collect $PROJECT_PATH/experiments/config/example_collection_collect_plot.json $TARGET_PATH --plot
+    sc-experiment --loglevel=DEBUG --radio=USRP --device=$(nrfjprog --com | cut - -d " " -f 5) -o $HOME/storage/tmp/raw_0_0.npy collect $CONFIG_JSON_PATH_DST $TARGET_PATH --plot
 }
 
 function analyze_only() {
-    sc-experiment --loglevel=DEBUG --radio=USRP --device=$(nrfjprog --com | cut - -d " " -f 5) -o $HOME/storage/tmp/raw_0_0.npy extract $PROJECT_PATH/experiments/config/example_collection_collect_plot.json $TARGET_PATH --plot
+    sc-experiment --loglevel=DEBUG --radio=USRP --device=$(nrfjprog --com | cut - -d " " -f 5) -o $HOME/storage/tmp/raw_0_0.npy extract $CONFIG_JSON_PATH_DST $TARGET_PATH --plot
 }
 
 # * Script
 
+# Create collection directory.
 mkdir -p $TARGET_PATH
 
+# Set the JSON configuration file.
+configure_json
+
 # Use this once to record a trace. 
-# record_and_analyze
+record_and_analyze
 # Once the recording is good, use this to configure the analysis.
-# analyze_only
+analyze_only
