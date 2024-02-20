@@ -83,8 +83,11 @@ def find_starts(config, data, target_path, index):
     #TOM ADDITION END
         
     trigger = np.absolute(trigger)
-    trigger = butter_lowpass_filter(
-        trigger, config.lowpass_freq,config.sampling_rate, 6)
+    # Use an SOS filter because the old one raised exception when using small
+    # lowpass values:
+    lpf = signal.butter(5, config.lowpass_freq, 'low', fs=config.sampling_rate, output='sos')
+    trigger = np.array(signal.sosfilt(lpf, trigger), dtype=trigger.dtype)
+    # trigger = butter_lowpass_filter(trigger, config.lowpass_freq,config.sampling_rate, 6)
 
     #TOM ADDITION START
     #plt.clf()
