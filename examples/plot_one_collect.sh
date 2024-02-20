@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# * Parameters
+
+# Temporary collection  path.
+TARGET_PATH=/tmp/collect
+
+# * Functions
+
 function record_and_analyze() {
     # Kill previously started radio server.
     pkill radio.py
@@ -15,12 +22,16 @@ function record_and_analyze() {
     sleep 10
 
     # Start collection and plot result.
-    sc-experiment --loglevel=DEBUG --radio=USRP --device=$(nrfjprog --com | cut - -d " " -f 5) -o $HOME/storage/tmp/raw_0_0.npy collect $PROJECT_PATH/experiments/config/example_collection_collect_plot.json /tmp/collect --plot
+    sc-experiment --loglevel=DEBUG --radio=USRP --device=$(nrfjprog --com | cut - -d " " -f 5) -o $HOME/storage/tmp/raw_0_0.npy collect $PROJECT_PATH/experiments/config/example_collection_collect_plot.json $TARGET_PATH --plot
 }
 
 function analyze_only() {
-    sc-experiment --loglevel=DEBUG --radio=USRP --device=$(nrfjprog --com | cut - -d " " -f 5) -o $HOME/storage/tmp/raw_0_0.npy extract $PROJECT_PATH/experiments/config/example_collection_collect_plot.json /tmp/collect --plot
+    sc-experiment --loglevel=DEBUG --radio=USRP --device=$(nrfjprog --com | cut - -d " " -f 5) -o $HOME/storage/tmp/raw_0_0.npy extract $PROJECT_PATH/experiments/config/example_collection_collect_plot.json $TARGET_PATH --plot
 }
+
+# * Script
+
+mkdir -p $TARGET_PATH
 
 # Use this once to record a trace. 
 # record_and_analyze
