@@ -19,6 +19,7 @@ import numpy as np
 
 from . import analyze
 
+import lib.log as ll
 import lib.load as load
 import lib.soapysdr as soapysdr
 
@@ -206,6 +207,7 @@ def cli(device, baudrate, ykush_port, slowmode, radio, radio_address, radio_ante
     YKUSH_PORT = ykush_port
 
     l.setLevel(loglevel)
+    ll.set_level(loglevel)
 
 
 def _plot_outfile():
