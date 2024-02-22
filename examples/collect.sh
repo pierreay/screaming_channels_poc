@@ -3,7 +3,9 @@
 # * Parameters
 
 # Temporary collection  path.
-TARGET_PATH=/tmp/collect
+TARGET_PATH=/tmp/collect/2000
+# Logging level for Python.
+LOG_LEVEL=DEBUG
 
 # * Functions
 
@@ -35,7 +37,7 @@ function configure_json_collect() {
     export CONFIG_JSON_PATH_DST=$TARGET_PATH/example_collection_collect.json
     cp $CONFIG_JSON_PATH_SRC $CONFIG_JSON_PATH_DST
     configure_param_json $CONFIG_JSON_PATH_DST "trigger_threshold" "90e3"
-    configure_param_json $CONFIG_JSON_PATH_DST "num_points" "750"
+    configure_param_json $CONFIG_JSON_PATH_DST "num_points" "2000"
     configure_param_json $CONFIG_JSON_PATH_DST "fixed_key" "false"
     configure_param_json $CONFIG_JSON_PATH_DST "template_name" "$(configure_param_json_escape_path $TARGET_PATH/template.npy)"
 }
@@ -56,15 +58,15 @@ function record() {
 
     # Start SDR server.
     # NOTE: Make sure the JSON config file is configured accordingly to the SDR server here.
-    $SC_SRC/radio.py --config $SC_SRC/config.toml --dir $HOME/storage/tmp --loglevel DEBUG listen 128e6 2.512e9 8e6 --nf-id -1 --ff-id 0 --duration=1 --gain 76 &
+    $SC_SRC/radio.py --config $SC_SRC/config.toml --dir $HOME/storage/tmp --loglevel $LOG_LEVEL listen 128e6 2.512e9 8e6 --nf-id -1 --ff-id 0 --duration=0.6 --gain 76 &
     sleep 10
 
     # Start collection and plot result.
-    sc-experiment --loglevel=DEBUG --radio=USRP --device=$(nrfjprog --com | cut - -d " " -f 5) -o $HOME/storage/tmp/raw_0_0.npy collect $CONFIG_JSON_PATH_DST $TARGET_PATH $plot --average-out=$TARGET_PATH/template.npy
+    sc-experiment --loglevel=$LOG_LEVEL --radio=USRP --device=$(nrfjprog --com | cut - -d " " -f 5) -o $HOME/storage/tmp/raw_0_0.npy collect $CONFIG_JSON_PATH_DST $TARGET_PATH $plot --average-out=$TARGET_PATH/template.npy
 }
 
 function analyze_only() {
-    sc-experiment --loglevel=DEBUG --radio=USRP --device=$(nrfjprog --com | cut - -d " " -f 5) -o $HOME/storage/tmp/raw_0_0.npy extract $CONFIG_JSON_PATH_DST $TARGET_PATH --plot --average-out=$TARGET_PATH/template.npy
+    sc-experiment --loglevel=$LOG_LEVEL --radio=USRP --device=$(nrfjprog --com | cut - -d " " -f 5) -o $HOME/storage/tmp/raw_0_0.npy extract $CONFIG_JSON_PATH_DST $TARGET_PATH --plot --average-out=$TARGET_PATH/template.npy
 }
 
 # * Script
