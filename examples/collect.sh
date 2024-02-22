@@ -78,13 +78,13 @@ mkdir -p $TARGET_PATH
 
 # ** Configure the extraction / Template generation
 
-# DONE: Set the JSON configuration file for one recording analysis.
+# Set the JSON configuration file for one recording analysis.
 configure_json_plot
 
-# DONE: Use this once to record a trace. 
+# Use this once to record a trace. 
 record --plot
-# DONE: Once the recording is good, use this to configure the analysis.
-# analyze_only
+# Once the recording is good, use this to configure the analysis.
+analyze_only
 
 if [[ ! -f $TARGET_PATH/template.npy ]]; then
     echo "Template has not been created! (no file at $TARGET_PATH/template.npy)"
@@ -93,8 +93,8 @@ fi
 
 # ** Collect
 
-# DONE: Set the JSON configuration file for collection.
+# Set the JSON configuration file for collection.
 configure_json_collect
 
-# DONE: Collect a set of profile traces.
+# Collect a set of profile traces.
 record --no-plot
