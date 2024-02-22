@@ -11,7 +11,7 @@ from scipy.signal import butter, lfilter
 
 import lib.load as load
 import lib.soapysdr as soapysdr
-
+import lib.complex as complex
 
 #
 # Filter creation functions taken from https://stackoverflow.com/a/12233959
@@ -145,12 +145,15 @@ def find_starts(config, data, target_path, index):
 # encountered with different radios and setups. It is not very clean but it is
 # quite stable.
 def extract(capture_file, config, average_file_name=None, plot=False, target_path=None, savePlot=False, index=0):
-    """
-    Post-process a GNUradio capture to get a clean and well-aligned trace.
+    """Post-process a GNUradio capture to get a clean and well-aligned trace.
 
     The configuration is a reproduce.AnalysisConfig tuple. The optional
     average_file_name specifies the file to write the average to (i.e. the
     template candidate).
+
+    Return a tuple composed of the extracted amplitude and phase rotation
+    traces.
+
     """
     try:
         # Load data from custom dtype.
@@ -160,7 +163,7 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
         if len(data) == 0:
             print("Warning! empty data, replacing with zeros")
             template = np.load(config.template_name)
-            return np.zeros(len(template))
+            return np.zeros(len(template)), np.zeros(len(template))
     
         #TOM ADDITION START
         #plt.clf()
@@ -191,7 +194,7 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
         if len(data) == 0:
            print("Warning! empty data after drop start, replacing with zeros")
            template = np.load(config.template_name)
-           return np.zeros(len(template))
+           return np.zeros(len(template)), np.zeros(len(template))
 
    
         # polar discriminator
@@ -202,8 +205,10 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
         # return fdemod
         # data = fdemod
 
-        # TODO: Use absolute for analysis but use complex for saving!
-        data = np.absolute(data)
+        # AMPlitude
+        data_amp = np.absolute(data)
+        # PHase Rotation
+        data_phr = complex.get_phase_rot(data)
 
         #TOM ADDITION START
         #plt.clf()
@@ -213,26 +218,29 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
         #
         # extract/aling trace with trigger frequency + autocorrelation
         #
-        trace_starts, trigger, trigger_avg = find_starts(config, data, target_path, index)
+        # NOTE: find_starts() will work with the amplitude, but we will use the
+        # starts indexes against the raw I/Q.
+        trace_starts, trigger, trigger_avg = find_starts(config, data_amp, target_path, index)
         
         # extract at trigger + autocorrelate with the first to align
-        traces = []
+        traces_amp = []
+        traces_phr = []
         trace_length = int(config.signal_length * config.sampling_rate)
         for start in trace_starts:
-            if len(traces) >= config.num_traces_per_point:
+            if len(traces_amp) >= config.num_traces_per_point:
                 break
 
             stop = start + trace_length
 
-            if stop > len(data):
+            if stop > len(data_amp):
                 break
 
-            trace = data[start:stop]
+            trace_amp = data_amp[start:stop]
             if template is None or len(template) == 0:
-                template = trace
+                template = trace_amp
                 continue
 
-            trace_lpf = butter_lowpass_filter(trace, config.sampling_rate / 4,
+            trace_lpf = butter_lowpass_filter(trace_amp, config.sampling_rate / 4,
                     config.sampling_rate)
             template_lpf = butter_lowpass_filter(template, config.sampling_rate / 4,
                     config.sampling_rate)
@@ -242,35 +250,38 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
                 continue
 
             shift = np.argmax(correlation) - (len(template)-1)
-            traces.append(data[start+shift:stop+shift])
+            traces_amp.append(data_amp[start+shift:stop+shift])
+            traces_phr.append(data_phr[start+shift:stop+shift])
 
-        avg = np.average(traces, axis=0)
+        avg_amp = np.average(traces_amp, axis=0)
+        avg_phr = np.average(traces_phr, axis=0)
 
-        if np.shape(avg) == ():
-            return np.zeros(len(template))
+        if np.shape(avg_amp) == () or np.shape(avg_phr) == ():
+            return np.zeros(len(template)), np.zeros(len(template))
 
         if average_file_name:
-            np.save(average_file_name, avg)
+            np.save(average_file_name, avg_amp)
 
         if plot or savePlot:
-            plot_results(config, data, trigger, trigger_avg, trace_starts, traces, target_path, plot, savePlot)
+            plot_results(config, data_amp, trigger, trigger_avg, trace_starts, traces_amp, target_path, plot, savePlot)
+            plot_results(config, data_phr, trigger, trigger_avg, trace_starts, traces_phr, target_path, plot, savePlot)
 
-        std = np.std(traces,axis=0)
+        std = np.std(traces_amp,axis=0)
 
         print("Extracted ")
-        print("Number = ",len(traces))
-        print("avg[Max(std)] = %.2E"%avg[std.argmax()])
+        print("Number = ",len(traces_amp))
+        print("avg[Max(std)] = %.2E"%avg_amp[std.argmax()])
         print("Max(u) = Max(std) = %.2E"%(max(std)))
-        print("Max(u_rel) = %.2E"%(100*max(std)/avg[std.argmax()]),"%")
+        print("Max(u_rel) = %.2E"%(100*max(std)/avg_amp[std.argmax()]),"%")
 
         # plt.plot(avg, 'r')
         # plt.plot(template, 'b')
         # plt.show()
 
         if config.keep_all:
-            return traces
+            return traces_amp
         else:
-            return avg
+            return avg_amp, avg_phr
 
     except Exception as inst:
         print(inst)

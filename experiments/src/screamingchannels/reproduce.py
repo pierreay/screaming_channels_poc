@@ -314,7 +314,7 @@ def extract(config, target_path, name, average_out, plot, plot_out, max_power, r
     cfg_dict["collection"].setdefault('keep_all', False)
     cfg_dict["collection"].setdefault('channel', 0)
     collection_config = CollectionConfig(**cfg_dict["collection"])
-    trace = analyze.extract(OUTFILE, collection_config, average_out, plot, target_path, saveplot, index=0)
+    analyze.extract(OUTFILE, collection_config, average_out, plot, target_path, saveplot, index=0)
 
 @cli.command()
 @click.argument("config", type=click.File())
@@ -528,9 +528,10 @@ def collect(config, target_path, name, average_out, plot, plot_out, max_power, r
                 radio.accept()
                 radio.save()
 
-                trace = analyze.extract(OUTFILE, collection_config, average_out, plot, target_path, saveplot, index)
+                trace_amp, trace_phr = analyze.extract(OUTFILE, collection_config, average_out, plot, target_path, saveplot, index)
                 
-                np.save(os.path.join(target_path,"avg_%s_%d.npy"%(name,index)),trace)
+                np.save(os.path.join(target_path,"amp_%s_%d.npy"%(name,index)),trace_amp)
+                np.save(os.path.join(target_path,"phr_%s_%d.npy"%(name,index)),trace_phr)
                 if raw:
                     save_raw(OUTFILE, target_path, index, name)
 
