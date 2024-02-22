@@ -2,10 +2,12 @@
 
 # * Parameters
 
-# Temporary collection  path.
-TARGET_PATH=/tmp/collect/2000
 # Logging level for Python.
-LOG_LEVEL=DEBUG
+LOG_LEVEL=INFO
+# Number of traces.
+NUM_TRACES=4000
+# Temporary collection path.
+TARGET_PATH=/tmp/collect/$NUM_TRACES
 
 # * Functions
 
@@ -37,7 +39,7 @@ function configure_json_collect() {
     export CONFIG_JSON_PATH_DST=$TARGET_PATH/example_collection_collect.json
     cp $CONFIG_JSON_PATH_SRC $CONFIG_JSON_PATH_DST
     configure_param_json $CONFIG_JSON_PATH_DST "trigger_threshold" "90e3"
-    configure_param_json $CONFIG_JSON_PATH_DST "num_points" "2000"
+    configure_param_json $CONFIG_JSON_PATH_DST "num_points" "$NUM_TRACES"
     configure_param_json $CONFIG_JSON_PATH_DST "fixed_key" "false"
     configure_param_json $CONFIG_JSON_PATH_DST "template_name" "$(configure_param_json_escape_path $TARGET_PATH/template.npy)"
 }
@@ -77,10 +79,10 @@ mkdir -p $TARGET_PATH
 # ** Configure the extraction / Template generation
 
 # DONE: Set the JSON configuration file for one recording analysis.
-# configure_json_plot
+configure_json_plot
 
 # DONE: Use this once to record a trace. 
-# record --plot
+record --plot
 # DONE: Once the recording is good, use this to configure the analysis.
 # analyze_only
 
@@ -92,7 +94,7 @@ fi
 # ** Collect
 
 # DONE: Set the JSON configuration file for collection.
-# configure_json_collect
+configure_json_collect
 
 # DONE: Collect a set of profile traces.
-# record --no-plot
+record --no-plot
