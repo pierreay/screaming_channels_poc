@@ -247,9 +247,9 @@ def _send_parameter(ser, command, param):
 
     l.debug('Waiting check\n')
     x = ser.readline()
-    print ("received: "+x.decode())
+    l.debug ("received: "+x.decode())
     if len(x) == 0:
-        print("nothing received on timeout, ignoring error")
+        l.debug("nothing received on timeout, ignoring error")
         return 
     #check = ''.join(chr(int(word)) for word in x.split(' '))
     # -- create check like this instead for ESP32:
@@ -258,8 +258,8 @@ def _send_parameter(ser, command, param):
     #check = ''.join(chr(int(word)) for word in response)
     param2 = '%s' %  _encode_for_device(param)
     
-    print ("param: "+param2)
-    print ("check: "+x.decode())
+    l.debug ("param: "+param2)
+    l.debug ("check: "+x.decode())
     if x.decode().strip() != param2.strip():
         print(("ERROR\n%s\n%s" % (_encode_for_device(param),
                                  _encode_for_device(x))))
