@@ -89,8 +89,8 @@ fi
 
 # ** Collect
 
-# PROG: Set the JSON configuration file for collection.
-configure_json_collect
+# DONE: Set the JSON configuration file for collection.
+# configure_json_collect
 
-# PROG: Collect a set of profile traces.
-record --no-plot
+# DONE: Collect a set of profile traces.
+# record --no-plot
