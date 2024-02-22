@@ -64,7 +64,10 @@ function record() {
     sleep 10
 
     # Start collection and plot result.
+    echo "Press 's' to save figs to ~/Figure_1.png and ~/Figure_2.png" 
     sc-experiment --loglevel=$LOG_LEVEL --radio=USRP --device=$(nrfjprog --com | cut - -d " " -f 5) -o $HOME/storage/tmp/raw_0_0.npy collect $CONFIG_JSON_PATH_DST $TARGET_PATH $plot --average-out=$TARGET_PATH/template.npy
+    mv ~/Figure_1.png $TARGET_PATH/plot_template_amp.png
+    mv ~/Figure_2.png $TARGET_PATH/plot_template_phr.png
 }
 
 function analyze_only() {
