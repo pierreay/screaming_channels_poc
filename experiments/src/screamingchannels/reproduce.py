@@ -491,7 +491,7 @@ def collect(config, target_path, name, average_out, plot, plot_out, max_power, r
             
         # with click.progressbar(plaintexts) as bar:
             # for index, plaintext in enumerate(bar):
-        with click.progressbar(list(range(num_points))) as bar:
+        with click.progressbar(list(range(num_points)), label="Collecting") as bar:
             # for index, plaintext in enumerate(bar):
             for index in bar:
                 if firmware_mode.have_keys and not firmware_config.fixed_key:
