@@ -8,7 +8,7 @@ TARGET_PATH=/tmp/collect/4000
 PROFILE_PATH=$TARGET_PATH/profile
 
 # Number of traces to use.
-NUM_TRACES=2500
+NUM_TRACES=3000
 # Delimiters.
 START_POINT=0
 END_POINT=0
@@ -18,8 +18,8 @@ END_POINT=0
 function profile() {
     echo "Press 's' to save figs to ~/Figure_1.png and ~/Figure_2.png"
     sc-attack --plot --norm --data-path $TARGET_PATH --start-point $START_POINT --end-point $END_POINT --num-traces $NUM_TRACES profile $PROFILE_PATH --pois-algo r --num-pois 1 --poi-spacing 2 --variable p_xor_k
-    mv ~/Figure_1.png $PROFILE_PATH/profile_mean_trace.png
-    mv ~/Figure_2.png $PROFILE_PATH/profile_poi_1.png
+    mv ~/Figure_1.png $PROFILE_PATH/plot_mean_trace.png
+    mv ~/Figure_2.png $PROFILE_PATH/plot_poi_1.png
 }
 
 function attack() {

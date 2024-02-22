@@ -5,7 +5,7 @@
 # Logging level for Python.
 LOG_LEVEL=INFO
 # Number of traces.
-NUM_TRACES=4000
+NUM_TRACES=3000
 # Temporary collection path.
 TARGET_PATH=/tmp/collect/$NUM_TRACES
 
