@@ -37,7 +37,7 @@ def pre_process(trace, norm):
 # 2. Keep all the traces in a batch or average them (if they were collected with
 #    the keep-all option. 
 def generic_load(data_path,name,number,wstart=0,wend=0, average=True,
-        norm=False, norm2=False, mimo=""):
+                 norm=False, norm2=False, mimo="", comp="AMPLITUDE"):
     """
     Function that loads plainext, key(s), and (raw) traces.
     """
@@ -62,8 +62,11 @@ def generic_load(data_path,name,number,wstart=0,wend=0, average=True,
  
     for i in range(number):
         # read average or raw traces from file
+        comp_str = "amp" if comp == "AMPLITUDE" else None
+        comp_str = "phr" if comp == "PHASE_ROT" else comp_str
+        assert comp_str is not None
         raw_traces = np.load(
-                path.join(data_path, 'amp_%s_%d.npy' % (name, i))
+                path.join(data_path, '%s_%s_%d.npy' % (comp_str, name, i))
         )
 
         if np.shape(raw_traces) == () or not raw_traces.any():

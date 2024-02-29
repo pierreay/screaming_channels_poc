@@ -75,6 +75,8 @@ PROFILE_COVS = None
 PROFILE_STDS = None
 PROFILE_MEAN_TRACE = None
 LOG_PROBA = None
+# Component type ["AMPLITUDE" | "PHASE_ROT"]
+COMP = None
 
 @click.group()
 @click.option("--data-path", type=click.Path(exists=True, file_okay=False),
@@ -107,8 +109,10 @@ LOG_PROBA = None
               help="Normalize each trace set: traces = (traces-avg(traces))/std(traces).")
 @click.option("--mimo", default="",
               help="Choose ch1, ch2, eg, or mr")
+@click.option("--comp", default="AMPLITUDE",
+              help="Choose between amplitude [AMPLITUDE] or phase rotation [PHASE_ROT].")
 def cli(data_path, num_traces, start_point, end_point, plot, save_images, wait, num_key_bytes,
-        bruteforce, bit_bound_end, name, average, norm, norm2, mimo):
+        bruteforce, bit_bound_end, name, average, norm, norm2, mimo, comp):
     """
     Run an attack against previously collected traces.
 
@@ -118,6 +122,7 @@ def cli(data_path, num_traces, start_point, end_point, plot, save_images, wait, 
     """
     global PLOT, WAIT, NUM_KEY_BYTES, BRUTEFORCE, BIT_BOUND_END, PLAINTEXTS, TRACES, KEYFILE, DATAPATH
     global KEYS, FIXED_KEY, SAVE_IMAGES, CIPHERTEXTS
+    global COMP
     SAVE_IMAGES = save_images
     PLOT = plot
     WAIT = wait
@@ -128,9 +133,11 @@ def cli(data_path, num_traces, start_point, end_point, plot, save_images, wait, 
     BIT_BOUND_END = bit_bound_end
     KEYFILE = path.join(data_path, 'key_%s.txt' % name)
     DATAPATH = data_path
+    COMP = comp
     
-    FIXED_KEY, PLAINTEXTS, KEYS, TRACES = generic_load(data_path, name, num_traces,
-            start_point, end_point, average, norm, norm2, mimo)
+    FIXED_KEY, PLAINTEXTS, KEYS, TRACES = generic_load(
+        data_path, name, num_traces, start_point, end_point, average, norm, norm2, mimo, comp=COMP
+    )
     
     CIPHERTEXTS = list(map(aes, PLAINTEXTS, KEYS))
 
