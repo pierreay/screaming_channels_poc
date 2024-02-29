@@ -63,7 +63,7 @@ def generic_load(data_path,name,number,wstart=0,wend=0, average=True,
     for i in range(number):
         # read average or raw traces from file
         raw_traces = np.load(
-                path.join(data_path, 'avg_%s_%d.npy' % (name, i))
+                path.join(data_path, 'amp_%s_%d.npy' % (name, i))
         )
 
         if np.shape(raw_traces) == () or not raw_traces.any():
