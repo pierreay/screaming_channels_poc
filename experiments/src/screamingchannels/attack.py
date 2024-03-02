@@ -4,6 +4,10 @@ import click
 import numpy as np
 from matplotlib import pyplot as plt
 
+import lib.log as ll
+import lib.load as load
+import lib.analyze as analyze
+
 SMALL_SIZE = 8*4
 MEDIUM_SIZE = 10*4
 BIGGER_SIZE = 12*4
@@ -965,19 +969,31 @@ def profile(variable, lr_type, pois_algo, k_fold, num_pois, poi_spacing, pois_di
               help="Pooled covariance for template attacks.")
 @click.option("--window", default=0, show_default=True,
               help="Average poi-window to poi+window samples.")
+@click.option("--align/--no-align", default=False, show_default=True,
+             help="Align the attack traces with the profile before to attack.")
+@click.option("--fs", default=0, type=float, show_default=True,
+             help="Sampling rate used when aligning traces")
 def attack(variable, pois_algo, num_pois, poi_spacing, template_dir,
-        attack_algo, k_fold, average_bytes, pooled_cov, window):
+           attack_algo, k_fold, average_bytes, pooled_cov, window, align, fs):
     """
     Template attack or profiled correlation attack.
 
     The template directory is where we store multiple files comprising the
     template.
     """
+    global TRACES, PROFILE_MEAN_TRACE
     
     if not FIXED_KEY and variable != "hw_p" and variable != "p":
         raise Exception("This set DOES NOT use a FIXED KEY")
  
     load_profile(template_dir)
+
+    if align is True:
+        assert fs > 0
+        ll.LOGGER.info("Align attack traces with themselves...")
+        TRACES = analyze.align_all(TRACES, int(fs), template=TRACES[0], tqdm_log=True)
+        ll.LOGGER.info("Align attack traces with the profile...")
+        TRACES = analyze.align_all(TRACES, int(fs), template=PROFILE_MEAN_TRACE, tqdm_log=True)
     
     if PLOT:
         plt.plot(POIS[:,0], np.average(TRACES, axis=0)[POIS[:,0]], '*')
