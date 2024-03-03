@@ -529,7 +529,8 @@ def collect(config, target_path, name, average_out, plot, plot_out, max_power, r
                 radio.save()
 
                 trace_amp, trace_phr = analyze.extract(OUTFILE, collection_config, average_out, plot, target_path, saveplot, index)
-                
+
+                # TODO: Save IQ.
                 np.save(os.path.join(target_path,"amp_%s_%d.npy"%(name,index)),trace_amp)
                 np.save(os.path.join(target_path,"phr_%s_%d.npy"%(name,index)),trace_phr)
                 if raw:
