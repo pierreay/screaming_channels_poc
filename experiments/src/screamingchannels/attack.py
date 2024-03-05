@@ -79,7 +79,6 @@ PROFILE_COVS = None
 PROFILE_STDS = None
 PROFILE_MEAN_TRACE = None
 LOG_PROBA = None
-# Component type ["AMPLITUDE" | "PHASE_ROT"]
 COMP = None
 
 @click.group()
@@ -113,8 +112,8 @@ COMP = None
               help="Normalize each trace set: traces = (traces-avg(traces))/std(traces).")
 @click.option("--mimo", default="",
               help="Choose ch1, ch2, eg, or mr")
-@click.option("--comp", default="AMPLITUDE",
-              help="Choose between amplitude [AMPLITUDE] or phase rotation [PHASE_ROT].")
+@click.option("--comp", default="amp",
+              help="Choose component to load (e.g., amplitude is 'amp'")
 def cli(data_path, num_traces, start_point, end_point, plot, save_images, wait, num_key_bytes,
         bruteforce, bit_bound_end, name, average, norm, norm2, mimo, comp):
     """
