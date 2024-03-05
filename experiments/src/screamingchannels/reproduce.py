@@ -503,6 +503,8 @@ def collect(config, target_path, name, average_out, plot, plot_out, max_power, r
                     else:
                         _send_plaintext(ser, plaintexts[index])
 
+                print("Start instrumentation #{}...".format(index))
+
                 # Start non-blocking recording for a pre-configured duration.
                 radio.record_start()
                 time.sleep(0.03)
@@ -528,12 +530,14 @@ def collect(config, target_path, name, average_out, plot, plot_out, max_power, r
                 radio.accept()
                 radio.save()
 
-                trace_amp, trace_phr, trace_i, trace_q = analyze.extract(OUTFILE, collection_config, average_out, plot, target_path, saveplot, index)
+                trace_amp, trace_phr, trace_i, trace_q, trace_i_augmented, trace_q_augmented = analyze.extract(OUTFILE, collection_config, average_out, plot, target_path, saveplot, index)
 
                 np.save(os.path.join(target_path,"amp_%s_%d.npy"%(name,index)),trace_amp)
                 np.save(os.path.join(target_path,"phr_%s_%d.npy"%(name,index)),trace_phr)
                 np.save(os.path.join(target_path,"i_%s_%d.npy"%(name,index)),trace_i)
                 np.save(os.path.join(target_path,"q_%s_%d.npy"%(name,index)),trace_q)
+                np.save(os.path.join(target_path,"i_augmented_%s_%d.npy"%(name,index)),trace_i_augmented)
+                np.save(os.path.join(target_path,"q_augmented_%s_%d.npy"%(name,index)),trace_q_augmented)
                 if raw:
                     save_raw(OUTFILE, target_path, index, name)
 

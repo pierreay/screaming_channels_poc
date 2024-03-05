@@ -214,6 +214,13 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
         # Q
         data_q = np.imag(data)
 
+        # Compute augmented I/Q.
+        data_augmented = data_amp * np.exp(1j * data_phr)
+        # I from augmented IQ.
+        data_i_augmented = np.real(data_augmented)
+        # Q from augmented IQ.
+        data_q_augmented = np.imag(data_augmented)
+
         #TOM ADDITION START
         #plt.clf()
         #plt.plot(data)
@@ -231,6 +238,8 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
         traces_phr = []
         traces_i = []
         traces_q = []
+        traces_i_augmented = []
+        traces_q_augmented = []
         trace_length = int(config.signal_length * config.sampling_rate)
         for start in trace_starts:
             if len(traces_amp) >= config.num_traces_per_point:
@@ -260,15 +269,20 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
             traces_phr.append(data_phr[start+shift:stop+shift])
             traces_i.append(data_i[start+shift:stop+shift])
             traces_q.append(data_q[start+shift:stop+shift])
+            traces_i_augmented.append(data_i_augmented[start+shift:stop+shift])
+            traces_q_augmented.append(data_q_augmented[start+shift:stop+shift])
 
         avg_amp = np.average(traces_amp, axis=0)
         avg_phr = np.average(traces_phr, axis=0)
         avg_i = np.average(traces_i, axis=0)
         avg_q = np.average(traces_q, axis=0)
+        avg_i_augmented = np.average(traces_i_augmented, axis=0)
+        avg_q_augmented = np.average(traces_q_augmented, axis=0)
 
         if (np.shape(avg_amp) == () or np.shape(avg_phr) == ()
-            or np.shape(avg_i) == () or np.shape(avg_q) == ()):
-            return np.zeros(len(template)), np.zeros(len(template))
+            or np.shape(avg_i) == () or np.shape(avg_q) == ()
+            or np.shape(avg_i_augmented) == () or np.shape(avg_q_augmented) == ()):
+            return np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template))
 
         if average_file_name:
             np.save(average_file_name, avg_amp)
@@ -278,6 +292,8 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
             plot_results(config, data_phr, trigger, trigger_avg, trace_starts, traces_phr, target_path, plot, savePlot, "Phase rotation")
             plot_results(config, data_i, trigger, trigger_avg, trace_starts, traces_i, target_path, plot, savePlot, "I")
             plot_results(config, data_q, trigger, trigger_avg, trace_starts, traces_q, target_path, plot, savePlot, "Q")
+            plot_results(config, data_i_augmented, trigger, trigger_avg, trace_starts, traces_i_augmented, target_path, plot, savePlot, "I augmented")
+            plot_results(config, data_q_augmented, trigger, trigger_avg, trace_starts, traces_q_augmented, target_path, plot, savePlot, "Q augmented")
 
         std = np.std(traces_amp,axis=0)
 
@@ -294,13 +310,13 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
         if config.keep_all:
             return traces_amp
         else:
-            return avg_amp, avg_phr, avg_i, avg_q
+            return avg_amp, avg_phr, avg_i, avg_q, avg_i_augmented, avg_q_augmented
 
     except Exception as inst:
         print(inst)
         print("Error, returning zeros")
         template = np.load(config.template_name)
-        return np.zeros(len(template))
+        return np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template))
 
 def plot_results(config, data, trigger, trigger_average, starts, traces, target_path=None, plot=True, savePlot=False, title=""):
     plt.subplots_adjust(hspace = 0.6) 
