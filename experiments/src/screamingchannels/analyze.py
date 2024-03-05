@@ -209,6 +209,10 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
         data_amp = np.absolute(data)
         # PHase Rotation
         data_phr = complex.get_phase_rot(data)
+        # I
+        data_i = np.real(data)
+        # Q
+        data_q = np.imag(data)
 
         #TOM ADDITION START
         #plt.clf()
@@ -225,6 +229,8 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
         # extract at trigger + autocorrelate with the first to align
         traces_amp = []
         traces_phr = []
+        traces_i = []
+        traces_q = []
         trace_length = int(config.signal_length * config.sampling_rate)
         for start in trace_starts:
             if len(traces_amp) >= config.num_traces_per_point:
@@ -252,19 +258,26 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
             shift = np.argmax(correlation) - (len(template)-1)
             traces_amp.append(data_amp[start+shift:stop+shift])
             traces_phr.append(data_phr[start+shift:stop+shift])
+            traces_i.append(data_i[start+shift:stop+shift])
+            traces_q.append(data_q[start+shift:stop+shift])
 
         avg_amp = np.average(traces_amp, axis=0)
         avg_phr = np.average(traces_phr, axis=0)
+        avg_i = np.average(traces_i, axis=0)
+        avg_q = np.average(traces_q, axis=0)
 
-        if np.shape(avg_amp) == () or np.shape(avg_phr) == ():
+        if (np.shape(avg_amp) == () or np.shape(avg_phr) == ()
+            or np.shape(avg_i) == () or np.shape(avg_q) == ()):
             return np.zeros(len(template)), np.zeros(len(template))
 
         if average_file_name:
             np.save(average_file_name, avg_amp)
 
         if plot or savePlot:
-            plot_results(config, data_amp, trigger, trigger_avg, trace_starts, traces_amp, target_path, plot, savePlot)
-            plot_results(config, data_phr, trigger, trigger_avg, trace_starts, traces_phr, target_path, plot, savePlot)
+            plot_results(config, data_amp, trigger, trigger_avg, trace_starts, traces_amp, target_path, plot, savePlot, "Amplitude")
+            plot_results(config, data_phr, trigger, trigger_avg, trace_starts, traces_phr, target_path, plot, savePlot, "Phase rotation")
+            plot_results(config, data_i, trigger, trigger_avg, trace_starts, traces_i, target_path, plot, savePlot, "I")
+            plot_results(config, data_q, trigger, trigger_avg, trace_starts, traces_q, target_path, plot, savePlot, "Q")
 
         std = np.std(traces_amp,axis=0)
 
@@ -281,7 +294,7 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
         if config.keep_all:
             return traces_amp
         else:
-            return avg_amp, avg_phr
+            return avg_amp, avg_phr, avg_i, avg_q
 
     except Exception as inst:
         print(inst)
@@ -289,13 +302,13 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
         template = np.load(config.template_name)
         return np.zeros(len(template))
 
-def plot_results(config, data, trigger, trigger_average, starts, traces, target_path=None, plot=True, savePlot=False):
+def plot_results(config, data, trigger, trigger_average, starts, traces, target_path=None, plot=True, savePlot=False, title=""):
     plt.subplots_adjust(hspace = 0.6) 
     plt.subplot(4, 1, 1)
 
     t = np.linspace(0,len(data) / config.sampling_rate, len(data))
     plt.plot(t, data)
-    plt.title("Time domain capture")
+    plt.title(title)
     plt.xlabel("time [s]")
     plt.ylabel("normalized amplitude")
    
