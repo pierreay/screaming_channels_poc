@@ -300,8 +300,8 @@ def save_raw(capture_file, target_path, index, name):
               help="Set the output power of the device to its maximum.")
 @click.option("--raw/--no-raw", default=False, show_default=True,
               help="Save the raw IQ data.")
-@click.option("--saveplot/--no-saveplot", default=False, show_default=True,
-              help="Plot the results of trace collection.")
+@click.option("--saveplot/--no-saveplot", default=True, show_default=True,
+              help="Save the plot of the results of trace collection.")
 @click.option("-p", "--set-power", default=0, show_default=True,
               help="If set, sets the device to a specific power level (overrides --max-power)")
 def extract(config, target_path, name, average_out, plot, plot_out, max_power, raw, saveplot, set_power):
@@ -333,8 +333,8 @@ def extract(config, target_path, name, average_out, plot, plot_out, max_power, r
               help="Set the output power of the device to its maximum.")
 @click.option("--raw/--no-raw", default=False, show_default=True,
               help="Save the raw IQ data.")
-@click.option("--saveplot/--no-saveplot", default=False, show_default=True,
-              help="Plot the results of trace collection.")
+@click.option("--saveplot/--no-saveplot", default=True, show_default=True,
+              help="Save the plot of the results of trace collection.")
 @click.option("-p", "--set-power", default=0, show_default=True,
               help="If set, sets the device to a specific power level (overrides --max-power)")
 def collect(config, target_path, name, average_out, plot, plot_out, max_power, raw, saveplot, set_power):
