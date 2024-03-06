@@ -15,6 +15,7 @@
         "sampling_rate": 8e6,
         "num_points": 1,
         "num_traces_per_point": 300,
+        "num_traces_per_point_keep": 300,
         "bandpass_lower": 1.93e6,
         "bandpass_upper": 2.18e6,
         "lowpass_freq": 3e3,

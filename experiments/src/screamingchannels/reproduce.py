@@ -98,8 +98,10 @@ CollectionConfig = collections.namedtuple(
         "sampling_rate",
         # How many different plaintext/key combinations to record.
         "num_points",
-        # How many traces to use.
+        # How many traces executed by the firmware.
         "num_traces_per_point",
+        # How many traces to keep from the recording.
+        "num_traces_per_point_keep",
         # Multiplier to account for traces dropped due to signal processing
         "traces_per_point_multiplier",
         # Lower cut-off frequency of the band-pass filter.

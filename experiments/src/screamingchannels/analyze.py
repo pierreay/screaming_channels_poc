@@ -242,7 +242,8 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
         traces_q_augmented = []
         trace_length = int(config.signal_length * config.sampling_rate)
         for start in trace_starts:
-            if len(traces_amp) >= config.num_traces_per_point:
+            if (len(traces_amp) >= config.num_traces_per_point
+                or len(traces_amp) >= config.num_traces_per_point_keep):
                 break
 
             stop = start + trace_length
