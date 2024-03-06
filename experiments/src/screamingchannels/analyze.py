@@ -288,12 +288,12 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
             np.save(average_file_name, avg_amp)
 
         if plot or savePlot:
-            plot_results(config, data_amp, trigger, trigger_avg, trace_starts, traces_amp, target_path, plot, savePlot, "Amplitude")
-            plot_results(config, data_phr, trigger, trigger_avg, trace_starts, traces_phr, target_path, plot, savePlot, "Phase rotation")
-            plot_results(config, data_i, trigger, trigger_avg, trace_starts, traces_i, target_path, plot, savePlot, "I")
-            plot_results(config, data_q, trigger, trigger_avg, trace_starts, traces_q, target_path, plot, savePlot, "Q")
-            plot_results(config, data_i_augmented, trigger, trigger_avg, trace_starts, traces_i_augmented, target_path, plot, savePlot, "I augmented")
-            plot_results(config, data_q_augmented, trigger, trigger_avg, trace_starts, traces_q_augmented, target_path, plot, savePlot, "Q augmented")
+            plot_results(config, data_amp, trigger, trigger_avg, trace_starts, traces_amp, target_path, plot, savePlot, "amp")
+            plot_results(config, data_phr, trigger, trigger_avg, trace_starts, traces_phr, target_path, plot, savePlot, "phr")
+            plot_results(config, data_i, trigger, trigger_avg, trace_starts, traces_i, target_path, plot, savePlot, "i")
+            plot_results(config, data_q, trigger, trigger_avg, trace_starts, traces_q, target_path, plot, savePlot, "q")
+            plot_results(config, data_i_augmented, trigger, trigger_avg, trace_starts, traces_i_augmented, target_path, plot, savePlot, "i_augmented")
+            plot_results(config, data_q_augmented, trigger, trigger_avg, trace_starts, traces_q_augmented, target_path, plot, savePlot, "q_augmented")
 
         std = np.std(traces_amp,axis=0)
 
@@ -319,7 +319,6 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
         return np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template))
 
 def plot_results(config, data, trigger, trigger_average, starts, traces, target_path=None, plot=True, savePlot=False, title=""):
-    plt.subplots_adjust(hspace = 0.6) 
     plt.subplot(4, 1, 1)
 
     t = np.linspace(0,len(data) / config.sampling_rate, len(data))
@@ -375,8 +374,15 @@ def plot_results(config, data, trigger, trigger_average, starts, traces, target_
         plt.xlabel("time [s]")
         plt.ylabel("normalized amplitude")
 
+    plt.tight_layout()
+    plt.subplots_adjust(hspace = 0.5, left=0.1)
+
+    # NOTE: Fix savefig() layout.
+    figure = plt.gcf() # Get current figure
+    figure.set_size_inches(32, 18) # Set figure's size manually to your full screen (32x18).
+
     if savePlot and target_path != None:
-        plt.savefig(target_path + "/plot.png")
+        plt.savefig(target_path + "/plot_{}.png".format(title), dpi=100, bbox_inches='tight')
     if plot:
         plt.show()
 
