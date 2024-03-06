@@ -242,8 +242,7 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
         traces_q_augmented = []
         trace_length = int(config.signal_length * config.sampling_rate)
         for start in trace_starts:
-            if (len(traces_amp) >= config.num_traces_per_point
-                or len(traces_amp) >= config.num_traces_per_point_keep):
+            if len(traces_amp) >= min(config.num_traces_per_point, config.num_traces_per_point_keep):
                 break
 
             stop = start + trace_length
@@ -365,14 +364,14 @@ def plot_results(config, data, trigger, trigger_average, starts, traces, target_
         plt.subplot(4, 1, 3)
         for trace in traces:
             plt.plot(t, trace / max(trace))
-        plt.title("%d aligned traces" % config.num_traces_per_point)
+        plt.title("%d aligned traces" % min(config.num_traces_per_point, config.num_traces_per_point_keep))
         plt.xlabel("time [s]")
         plt.ylabel("normalized amplitude")
 
         plt.subplot(4,1,4)
         avg = np.average(traces, axis=0)
         plt.plot(t, avg / max(avg))
-        plt.title("Average of %d traces" % config.num_traces_per_point)
+        plt.title("Average of %d traces" % min(config.num_traces_per_point, config.num_traces_per_point_keep))
         plt.xlabel("time [s]")
         plt.ylabel("normalized amplitude")
 
