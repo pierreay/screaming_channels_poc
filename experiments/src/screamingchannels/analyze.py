@@ -386,5 +386,7 @@ def plot_results(config, data, trigger, trigger_average, starts, traces, target_
     if plot:
         plt.show()
 
+    plt.clf()
+
 if __name__ == "__main__":
     extract(True)
