@@ -535,11 +535,14 @@ def find_pois(pois_algo, k_fold, num_pois, poi_spacing, template_dir='.'):
             plt.legend(loc='upper right')
  
         plt.legend()
+        if SAVE_IMAGES:
+            # NOTE: Fix savefig() layout.
+            figure = plt.gcf() # Get current figure
+            figure.set_size_inches(32, 18) # Set figure's size manually to your full screen (32x18).
+            plt.savefig(os.path.join(template_dir,'pois.pdf'), bbox_inches='tight', dpi=100)
         if PLOT:
             plt.show()
-        if SAVE_IMAGES:
-            plt.savefig(os.path.join(template_dir,'pois.pdf'))
-            plt.close()
+        plt.clf()
 
 # Once the POIs are known, we can drop all the other points of the traces
 # Optionally, instead of taking the peak only, we can take the average of a
@@ -604,12 +607,14 @@ def build_profile(variable, template_dir='.'):
                              fmt='--o',
                              label="subkey %d"%bnum)
             plt.legend(loc='upper right')
+            if SAVE_IMAGES:
+                # NOTE: Fix savefig() layout.
+                figure = plt.gcf() # Get current figure
+                figure.set_size_inches(32, 18) # Set figure's size manually to your full screen (32x18).
+                plt.savefig(os.path.join(template_dir,'profile_poi_%d.pdf'%i), bbox_inches='tight', dpi=100)
             if PLOT:
                 plt.show()
-            if SAVE_IMAGES:
-                plt.savefig(os.path.join(template_dir,'profile_poi_%d.pdf'%i),
-                        bbox_inches='tight')
-                plt.close()
+            plt.clf()
 
 # Find the best (linear) combination of the bits of the leak variable that fits
 # the measured traces, compare it with the profile estimated for each possible
