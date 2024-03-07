@@ -944,8 +944,12 @@ def bruteforce(bit_bound_end):
               help="Minimum number of points between two points of interest.")
 @click.option("--pois-dir", default="", type=click.Path(file_okay=False, writable=True),
               help="Reduce the trace using the POIS in this folder")
+@click.option("--align/--no-align", default=False, show_default=True,
+             help="Align the training traces before computing the profile.")
+@click.option("--fs", default=0, type=float, show_default=True,
+             help="Sampling rate used when aligning traces")
 @click.argument("template_dir", type=click.Path(file_okay=False, writable=True))
-def profile(variable, lr_type, pois_algo, k_fold, num_pois, poi_spacing, pois_dir, template_dir):
+def profile(variable, lr_type, pois_algo, k_fold, num_pois, poi_spacing, pois_dir, align, fs, template_dir):
     """
     Build a template using a chosen technique.
 
@@ -965,6 +969,10 @@ def profile(variable, lr_type, pois_algo, k_fold, num_pois, poi_spacing, pois_di
         # conditions.
         if not path.isdir(template_dir):
             raise
+
+    if align is True:
+        ll.LOGGER.info("Align training traces with themselves...")
+        TRACES = analyze.align_all(TRACES, int(fs), template=TRACES[0], tqdm_log=True)
 
     compute_variables(variable)
     classify()
