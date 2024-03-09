@@ -260,8 +260,9 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
             template_lpf = butter_lowpass_filter(template, config.sampling_rate / 4,
                     config.sampling_rate)
             correlation = signal.correlate(trace_lpf**2, template_lpf**2)
-            # print max(correlation)
+            # print("corr={}".format(max(correlation)))
             if max(correlation) <= config.min_correlation:
+                print("Skip trace start because corr={} <= corr_min={}".format(max(correlation), config.min_correlation))
                 continue
 
             shift = np.argmax(correlation) - (len(template)-1)
