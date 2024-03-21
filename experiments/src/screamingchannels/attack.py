@@ -1150,12 +1150,23 @@ def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
         cparefs = run_attack(attack_algo, average_bytes, num_pois, pooled_cov,
                            variable, retmore=True)
 
+        return cparefs
+
+    cparefs = {"amp": None, "phr": None}
+
     data_path = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/attack"
     comp = "amp"
     template_dir = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/profile_amp_16000_snr"
-    attack_comp(data_path, comp, template_dir, variable, pois_algo, num_pois,
-                poi_spacing, attack_algo, k_fold, average_bytes,
-                pooled_cov, window, align, fs)
+    cparefs[comp] = attack_comp(data_path, comp, template_dir, variable, pois_algo, num_pois,
+                                poi_spacing, attack_algo, k_fold, average_bytes,
+                                pooled_cov, window, align, fs)
+
+    data_path = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/attack"
+    comp = "phr"
+    template_dir = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/profile_phr_16000_snr"
+    cparefs[comp] = attack_comp(data_path, comp, template_dir, variable, pois_algo, num_pois,
+                                poi_spacing, attack_algo, k_fold, average_bytes,
+                                pooled_cov, window, align, fs)
 
     # Always rank if HEL is available.
     rank()
