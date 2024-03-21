@@ -735,7 +735,7 @@ def load_profile(template_dir):
         "PROFILE_MEAN_TRACE.npy"), PROFILE_MEAN_TRACE)
 
 # Run a template attack or a profiled correlation attack
-def run_attack(attack_algo, average_bytes, num_pois, pooled_cov, variable):
+def run_attack(attack_algo, average_bytes, num_pois, pooled_cov, variable, retmore=False):
     # global PROFILE_MEANS, PROFILE_COVS, POIS
     global LOG_PROBA
  
@@ -800,6 +800,7 @@ def run_attack(attack_algo, average_bytes, num_pois, pooled_cov, variable):
             scores.append(P_k)
     
     elif attack_algo == "pcc":
+        cparefs = [None] * NUM_KEY_BYTES
        
         assert len(POIS[0]) >= num_pois, "Requested number of POIs (%d) higher than available (%d)"%(num_pois, len(POIS[0]))
 
@@ -831,10 +832,10 @@ def run_attack(attack_algo, average_bytes, num_pois, pooled_cov, variable):
     
             bestguess[bnum] = np.argmax(maxcpa)
     
-            cparefs = np.argsort(maxcpa)[::-1]
+            cparefs[bnum] = np.argsort(maxcpa)[::-1]
     
             #Find PGE
-            pge[bnum] = list(cparefs).index(KEYS[0][bnum])
+            pge[bnum] = list(cparefs[bnum]).index(KEYS[0][bnum])
 
     else:
         raise Exception("Attack type not supported: %s"%attack_type)
@@ -845,7 +846,10 @@ def run_attack(attack_algo, average_bytes, num_pois, pooled_cov, variable):
         known = KEYS[0]
 
     print_result(bestguess, known, pge)
-    return (bestguess == known).all()
+    if retmore is False:
+        return (bestguess == known).all()
+    else:
+        return np.array(cparefs)
 
 # Wrapper to compute AES
 def aes(pt, key):
@@ -1055,6 +1059,7 @@ def attack(variable, pois_algo, num_pois, poi_spacing, template_dir,
     if BRUTEFORCE and not found:
         bruteforce(BIT_BOUND_END)
 
+# PROG: To implement.
 # NOTE: Copied from attack() above.
 @cli.command()
 @click.option("--variable", default="hw_sbox_out", show_default=True,
@@ -1113,8 +1118,8 @@ def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
         find_pois(pois_algo, num_pois, k_fold, poi_spacing)
 
     reduce_traces(num_pois, window)
-    found = run_attack(attack_algo, average_bytes, num_pois, pooled_cov,
-            variable)
+    cparefs = run_attack(attack_algo, average_bytes, num_pois, pooled_cov,
+                       variable, retmore=True)
 
     # Always rank if HEL is available.
     rank()
