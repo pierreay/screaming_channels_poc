@@ -1152,7 +1152,7 @@ def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
 
         return cparefs
 
-    cparefs = {"amp": None, "phr": None}
+    cparefs = {"amp": None, "phr": None, "i_augmented": None, "q_augmented": None, "recombined": None}
 
     data_path = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/attack"
     comp = "amp"
@@ -1160,6 +1160,7 @@ def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
     cparefs[comp] = attack_comp(data_path, comp, template_dir, variable, pois_algo, num_pois,
                                 poi_spacing, attack_algo, k_fold, average_bytes,
                                 pooled_cov, window, align, fs)
+    rank()
 
     data_path = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/attack"
     comp = "phr"
@@ -1167,9 +1168,25 @@ def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
     cparefs[comp] = attack_comp(data_path, comp, template_dir, variable, pois_algo, num_pois,
                                 poi_spacing, attack_algo, k_fold, average_bytes,
                                 pooled_cov, window, align, fs)
-
-    # Always rank if HEL is available.
     rank()
+
+    data_path = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/attack"
+    comp = "i_augmented"
+    template_dir = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/profile_i_augmented_16000_snr"
+    cparefs[comp] = attack_comp(data_path, comp, template_dir, variable, pois_algo, num_pois,
+                                poi_spacing, attack_algo, k_fold, average_bytes,
+                                pooled_cov, window, align, fs)
+    rank()
+    
+    data_path = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/attack"
+    comp = "q_augmented"
+    template_dir = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/profile_q_augmented_16000_snr"
+    cparefs[comp] = attack_comp(data_path, comp, template_dir, variable, pois_algo, num_pois,
+                                poi_spacing, attack_algo, k_fold, average_bytes,
+                                pooled_cov, window, align, fs)
+    rank()
+
+    # TODO: recombine here.
 
     if BRUTEFORCE and not found:
         bruteforce(BIT_BOUND_END)
