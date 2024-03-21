@@ -1055,6 +1055,72 @@ def attack(variable, pois_algo, num_pois, poi_spacing, template_dir,
     if BRUTEFORCE and not found:
         bruteforce(BIT_BOUND_END)
 
+# NOTE: Copied from attack() above.
+@cli.command()
+@click.option("--variable", default="hw_sbox_out", show_default=True,
+              help="Variable to attack (hw_sbox_out, hw_p_xor_k, p_xor_k)")
+@click.option("--pois-algo", default="", show_default=True,
+              help="Algo used to find pois (snr, soad)")
+@click.option("--num-pois", default=1, show_default=True,
+              help="Number of points of interest.")
+@click.option("--poi-spacing", default=5, show_default=True,
+              help="Minimum number of points between two points of interest.")
+@click.argument("template_dir", type=click.Path(file_okay=False, writable=True))
+@click.option("--attack-algo", default="pcc", show_default=True,
+              help="Algo used to rank the guesses (pdf, pcc)")
+@click.option("--k-fold", default=2, show_default=True,
+              help="k-fold cross validation.")
+@click.option("--average-bytes/--no-average-bytes", default=False, show_default=True,
+              help="Average the profile of the 16 bytes into one, for now it works only with pcc.")
+@click.option("--pooled-cov/--no-pooled-cov", default=False, show_default=True,
+              help="Pooled covariance for template attacks.")
+@click.option("--window", default=0, show_default=True,
+              help="Average poi-window to poi+window samples.")
+@click.option("--align/--no-align", default=False, show_default=True,
+             help="Align the attack traces with the profile before to attack.")
+@click.option("--fs", default=0, type=float, show_default=True,
+             help="Sampling rate used when aligning traces")
+def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
+           attack_algo, k_fold, average_bytes, pooled_cov, window, align, fs):
+    global TRACES, PROFILE_MEAN_TRACE
+    
+    if not FIXED_KEY and variable != "hw_p" and variable != "p":
+        raise Exception("This set DOES NOT use a FIXED KEY")
+ 
+    load_profile(template_dir)
+
+    if align is True:
+        assert fs > 0
+        ll.LOGGER.info("Align attack traces with themselves...")
+        TRACES = analyze.align_all(TRACES, int(fs), template=TRACES[0], tqdm_log=True)
+        ll.LOGGER.info("Align attack traces with the profile...")
+        TRACES = analyze.align_all(TRACES, int(fs), template=PROFILE_MEAN_TRACE, tqdm_log=True)
+    
+    if PLOT:
+        plt.plot(POIS[:,0], np.average(TRACES, axis=0)[POIS[:,0]], '*')
+        plt.plot(np.average(TRACES, axis=0))
+        plt.plot(PROFILE_MEAN_TRACE, 'r')
+        plt.show()
+
+    compute_variables(variable)
+    
+    if num_pois == 0:
+        num_pois = len(POIS[0])
+
+    if pois_algo != "":
+        classify()
+        estimate()
+        find_pois(pois_algo, num_pois, k_fold, poi_spacing)
+
+    reduce_traces(num_pois, window)
+    found = run_attack(attack_algo, average_bytes, num_pois, pooled_cov,
+            variable)
+
+    # Always rank if HEL is available.
+    rank()
+
+    if BRUTEFORCE and not found:
+        bruteforce(BIT_BOUND_END)
 
 ### CCS18 ATTACKS, but with new load and new bruteforce ###
 
