@@ -80,6 +80,14 @@ PROFILE_STDS = None
 PROFILE_MEAN_TRACE = None
 LOG_PROBA = None
 COMP = None
+NAME = None
+NUM_TRACES = None
+START_POINT = None
+END_POINT = None
+AVERAGE = None
+NORM = None
+NORM2 = None
+MIMO = None
 
 @click.group()
 @click.option("--data-path", type=click.Path(exists=True, file_okay=False),
@@ -126,6 +134,7 @@ def cli(data_path, num_traces, start_point, end_point, plot, save_images, wait, 
     global PLOT, WAIT, NUM_KEY_BYTES, BRUTEFORCE, BIT_BOUND_END, PLAINTEXTS, TRACES, KEYFILE, DATAPATH
     global KEYS, FIXED_KEY, SAVE_IMAGES, CIPHERTEXTS
     global COMP
+    global NAME, NUM_TRACES, START_POINT, END_POINT, AVERAGE, NORM, NORM2, MIMO
     SAVE_IMAGES = save_images
     PLOT = plot
     WAIT = wait
@@ -137,6 +146,15 @@ def cli(data_path, num_traces, start_point, end_point, plot, save_images, wait, 
     KEYFILE = path.join(data_path, 'key_%s.txt' % name)
     DATAPATH = data_path
     COMP = comp
+
+    NAME = name
+    NUM_TRACES = num_traces
+    START_POINT = start_point
+    END_POINT = end_point
+    AVERAGE = average
+    NORM = norm
+    NORM2 = norm2
+    MIMO = mimo
     
     FIXED_KEY, PLAINTEXTS, KEYS, TRACES = generic_load(
         data_path, name, num_traces, start_point, end_point, average, norm, norm2, mimo, comp=COMP
@@ -1087,39 +1105,60 @@ def attack(variable, pois_algo, num_pois, poi_spacing, template_dir,
              help="Sampling rate used when aligning traces")
 def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
            attack_algo, k_fold, average_bytes, pooled_cov, window, align, fs):
-    global TRACES, PROFILE_MEAN_TRACE
+    global TRACES, PROFILE_MEAN_TRACE, DATAPATH, COMP, FIXED_KEY, PLAINTEXTS, KEYS
+
+    def attack_comp(data_path, comp, template_dir, variable, pois_algo, num_pois,
+                    poi_spacing, attack_algo, k_fold,
+                    average_bytes, pooled_cov, window, align, fs):
+        global TRACES, PROFILE_MEAN_TRACE, DATAPATH, COMP, FIXED_KEY, PLAINTEXTS, KEYS
+        DATAPATH = data_path
+        COMP = comp
+        FIXED_KEY, PLAINTEXTS, KEYS, TRACES = generic_load(
+            data_path, NAME, NUM_TRACES, START_POINT, END_POINT, AVERAGE, NORM, NORM2, MIMO, comp=comp
+        )
+        CIPHERTEXTS = list(map(aes, PLAINTEXTS, KEYS))
+        PLAINTEXTS = np.asarray(PLAINTEXTS)
+        KEYS = np.asarray(KEYS)
+        CIPHERTEXTS = np.asarray(CIPHERTEXTS)
     
-    if not FIXED_KEY and variable != "hw_p" and variable != "p":
-        raise Exception("This set DOES NOT use a FIXED KEY")
- 
-    load_profile(template_dir)
+        if not FIXED_KEY and variable != "hw_p" and variable != "p":
+            raise Exception("This set DOES NOT use a FIXED KEY")
 
-    if align is True:
-        assert fs > 0
-        ll.LOGGER.info("Align attack traces with themselves...")
-        TRACES = analyze.align_all(TRACES, int(fs), template=TRACES[0], tqdm_log=True)
-        ll.LOGGER.info("Align attack traces with the profile...")
-        TRACES = analyze.align_all(TRACES, int(fs), template=PROFILE_MEAN_TRACE, tqdm_log=True)
-    
-    if PLOT:
-        plt.plot(POIS[:,0], np.average(TRACES, axis=0)[POIS[:,0]], '*')
-        plt.plot(np.average(TRACES, axis=0))
-        plt.plot(PROFILE_MEAN_TRACE, 'r')
-        plt.show()
+        load_profile(template_dir)
 
-    compute_variables(variable)
-    
-    if num_pois == 0:
-        num_pois = len(POIS[0])
+        if align is True:
+            assert fs > 0
+            ll.LOGGER.info("Align attack traces with themselves...")
+            TRACES = analyze.align_all(TRACES, int(fs), template=TRACES[0], tqdm_log=True)
+            ll.LOGGER.info("Align attack traces with the profile...")
+            TRACES = analyze.align_all(TRACES, int(fs), template=PROFILE_MEAN_TRACE, tqdm_log=True)
 
-    if pois_algo != "":
-        classify()
-        estimate()
-        find_pois(pois_algo, num_pois, k_fold, poi_spacing)
+        if PLOT:
+            plt.plot(POIS[:,0], np.average(TRACES, axis=0)[POIS[:,0]], '*')
+            plt.plot(np.average(TRACES, axis=0))
+            plt.plot(PROFILE_MEAN_TRACE, 'r')
+            plt.show()
 
-    reduce_traces(num_pois, window)
-    cparefs = run_attack(attack_algo, average_bytes, num_pois, pooled_cov,
-                       variable, retmore=True)
+        compute_variables(variable)
+
+        if num_pois == 0:
+            num_pois = len(POIS[0])
+
+        if pois_algo != "":
+            classify()
+            estimate()
+            find_pois(pois_algo, num_pois, k_fold, poi_spacing)
+
+        reduce_traces(num_pois, window)
+        cparefs = run_attack(attack_algo, average_bytes, num_pois, pooled_cov,
+                           variable, retmore=True)
+
+    data_path = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/attack"
+    comp = "amp"
+    template_dir = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/profile_amp_16000_snr"
+    attack_comp(data_path, comp, template_dir, variable, pois_algo, num_pois,
+                poi_spacing, attack_algo, k_fold, average_bytes,
+                pooled_cov, window, align, fs)
 
     # Always rank if HEL is available.
     rank()
