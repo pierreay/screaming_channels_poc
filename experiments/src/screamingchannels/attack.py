@@ -1105,6 +1105,9 @@ def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
                     poi_spacing, attack_algo, k_fold,
                     average_bytes, pooled_cov, window, align, fs):
         global TRACES, PROFILE_MEAN_TRACE, DATAPATH, COMP, FIXED_KEY, PLAINTEXTS, KEYS
+        print("data_path={}".format(data_path))
+        print("template_dir={}".format(template_dir))
+        print("comp={}".format(comp))
         DATAPATH = data_path
         COMP = comp
         FIXED_KEY, PLAINTEXTS, KEYS, TRACES = generic_load(
