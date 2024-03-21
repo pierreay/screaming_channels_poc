@@ -738,19 +738,13 @@ def save_profile(template_dir):
 def load_profile(template_dir):
     global PROFILE_MEANS, PROFILE_COVS, POIS, PROFILE_MEAN_TRACE
     global PROFILE_RS, PROFILE_RZS, PROFILE_STDS
-    POIS = np.load(path.join(template_dir, "POIS.npy"), POIS)
-    PROFILE_RS = np.load(path.join(template_dir, "PROFILE_RS.npy"),
-            PROFILE_RS)
-    PROFILE_RZS = np.load(path.join(template_dir, "PROFILE_RZS.npy"),
-            PROFILE_RZS)
-    PROFILE_MEANS = np.load(path.join(template_dir, "PROFILE_MEANS.npy"),
-            PROFILE_MEANS)
-    PROFILE_COVS = np.load(path.join(template_dir, "PROFILE_COVS.npy"),
-            PROFILE_COVS)
-    PROFILE_STDS = np.load(path.join(template_dir, "PROFILE_STDS.npy"),
-            PROFILE_STDS)
-    PROFILE_MEAN_TRACE = np.load(path.join(template_dir,
-        "PROFILE_MEAN_TRACE.npy"), PROFILE_MEAN_TRACE)
+    POIS = np.load(path.join(template_dir, "POIS.npy"))
+    PROFILE_RS = np.load(path.join(template_dir, "PROFILE_RS.npy"))
+    PROFILE_RZS = np.load(path.join(template_dir, "PROFILE_RZS.npy"))
+    PROFILE_MEANS = np.load(path.join(template_dir, "PROFILE_MEANS.npy"))
+    PROFILE_COVS = np.load(path.join(template_dir, "PROFILE_COVS.npy"))
+    PROFILE_STDS = np.load(path.join(template_dir, "PROFILE_STDS.npy"))
+    PROFILE_MEAN_TRACE = np.load(path.join(template_dir, "PROFILE_MEAN_TRACE.npy"))
 
 # Run a template attack or a profiled correlation attack
 def run_attack(attack_algo, average_bytes, num_pois, pooled_cov, variable, retmore=False):
