@@ -1219,6 +1219,22 @@ def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
                                                                       cparefs["i_augmented"][byte_index][pge_index],
                                                                       cparefs["q_augmented"][byte_index][pge_index])
 
+    bestguess = [0]*16
+    pge = [256]*16
+    for bnum in range(0, NUM_KEY_BYTES):
+        bestguess[bnum] = cparefs["recombined"][bnum][0]
+        for kguess in range(256):
+            try:
+                pge[bnum] = list(cparefs["recombined"][bnum]).index(KEYS[0][bnum])
+            except Exception as e:
+                pge[bnum] = 255
+    known = KEYS[0]
+    print_result(bestguess, known, pge)
+
+    # for byte_index in range(NUM_KEY_BYTES):
+    #     for pge_index in range(pow(2, 8)):
+    #         LOG_PROBA[byte_index][pge_index] = 
+
     if BRUTEFORCE and not found:
         bruteforce(BIT_BOUND_END)
 
