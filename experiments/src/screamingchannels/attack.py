@@ -1110,17 +1110,15 @@ def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
            attack_algo, k_fold, average_bytes, pooled_cov, window, align, fs):
     global TRACES, PROFILE_MEAN_TRACE, DATAPATH, COMP, FIXED_KEY, PLAINTEXTS, KEYS
 
-    def attack_comp(data_path, comp, template_dir, variable, pois_algo, num_pois,
+    def attack_comp(comp, template_dir, variable, pois_algo, num_pois,
                     poi_spacing, attack_algo, k_fold,
                     average_bytes, pooled_cov, window, align, fs):
         global TRACES, PROFILE_MEAN_TRACE, DATAPATH, COMP, FIXED_KEY, PLAINTEXTS, KEYS
-        print("data_path={}".format(data_path))
         print("template_dir={}".format(template_dir))
         print("comp={}".format(comp))
-        DATAPATH = data_path
         COMP = comp
         FIXED_KEY, PLAINTEXTS, KEYS, TRACES = generic_load(
-            data_path, NAME, NUM_TRACES, START_POINT, END_POINT, AVERAGE, NORM, NORM2, MIMO, comp=comp
+            DATAPATH, NAME, NUM_TRACES, START_POINT, END_POINT, AVERAGE, NORM, NORM2, MIMO, comp=comp
         )
         CIPHERTEXTS = list(map(aes, PLAINTEXTS, KEYS))
         PLAINTEXTS = np.asarray(PLAINTEXTS)
@@ -1163,38 +1161,31 @@ def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
 
     cparefs = {"amp": None, "phr": None, "i_augmented": None, "q_augmented": None, "recombined": None}
 
-    data_path = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/attack"
     comp = "amp"
-    template_dir = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/profile_amp_16000_snr"
-    cparefs[comp] = attack_comp(data_path, comp, template_dir, variable, pois_algo, num_pois,
+    cparefs[comp] = attack_comp(comp, template_dir.format(comp), variable, pois_algo, num_pois,
                                 poi_spacing, attack_algo, k_fold, average_bytes,
                                 pooled_cov, window, align, fs)
     rank()
 
-    data_path = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/attack"
     comp = "phr"
-    template_dir = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/profile_phr_16000_snr"
-    cparefs[comp] = attack_comp(data_path, comp, template_dir, variable, pois_algo, num_pois,
+    cparefs[comp] = attack_comp(comp, template_dir.format(comp), variable, pois_algo, num_pois,
                                 poi_spacing, attack_algo, k_fold, average_bytes,
                                 pooled_cov, window, align, fs)
     rank()
 
-    data_path = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/attack"
     comp = "i_augmented"
-    template_dir = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/profile_i_augmented_16000_snr"
-    cparefs[comp] = attack_comp(data_path, comp, template_dir, variable, pois_algo, num_pois,
+    cparefs[comp] = attack_comp(comp, template_dir.format(comp), variable, pois_algo, num_pois,
                                 poi_spacing, attack_algo, k_fold, average_bytes,
                                 pooled_cov, window, align, fs)
     rank()
     
-    data_path = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/attack"
     comp = "q_augmented"
-    template_dir = "/home/drac/pro_storage/dataset/240309_custom_firmware_phase_eval_iq_norep_modgfsk/profile_q_augmented_16000_snr"
-    cparefs[comp] = attack_comp(data_path, comp, template_dir, variable, pois_algo, num_pois,
+    cparefs[comp] = attack_comp(comp, template_dir.format(comp), variable, pois_algo, num_pois,
                                 poi_spacing, attack_algo, k_fold, average_bytes,
                                 pooled_cov, window, align, fs)
     rank()
 
+    print("comp=recombined_4major_vote")
     def major_vote(amp, phr, i_augmented, q_augmented):
         res = 0b00000000
         for bit_index in range(8):
@@ -1239,10 +1230,6 @@ def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
                 pge[bnum] = 255
     known = KEYS[0]
     print_result(bestguess, known, pge)
-
-    # for byte_index in range(NUM_KEY_BYTES):
-    #     for pge_index in range(pow(2, 8)):
-    #         LOG_PROBA[byte_index][pge_index] = 
 
     if BRUTEFORCE and not found:
         bruteforce(BIT_BOUND_END)
