@@ -1186,7 +1186,38 @@ def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
                                 pooled_cov, window, align, fs)
     rank()
 
-    # TODO: recombine here.
+    def major_vote(amp, phr, i_augmented, q_augmented):
+        res = 0b00000000
+        for bit_index in range(8):
+            cnt = 0
+            if ((amp >> bit_index) & 0b1):
+                cnt += 1
+            if ((phr >> bit_index) & 0b1):
+                cnt += 1
+            if ((i_augmented >> bit_index) & 0b1):
+                cnt += 1
+            if ((q_augmented >> bit_index) & 0b1):
+                cnt += 1
+            if cnt > 2:
+                res = res | 0b1 << bit_index
+            elif cnt < 2:
+                res = res | 0b0 << bit_index
+            else:
+                res = res | ((amp >> bit_index) & 0b1) << bit_index
+        # print("{:08b}".format((amp)))
+        # print("{:08b}".format((phr)))
+        # print("{:08b}".format((i_augmented)))
+        # print("{:08b}".format((q_augmented)))
+        # print("{:08b}".format((res)))
+        return res
+
+    cparefs["recombined"] = np.empty_like(cparefs["amp"])
+    for byte_index in range(NUM_KEY_BYTES):
+        for pge_index in range(pow(2, 8)):
+            cparefs["recombined"][byte_index][pge_index] = major_vote(cparefs["amp"][byte_index][pge_index],
+                                                                      cparefs["phr"][byte_index][pge_index],
+                                                                      cparefs["i_augmented"][byte_index][pge_index],
+                                                                      cparefs["q_augmented"][byte_index][pge_index])
 
     if BRUTEFORCE and not found:
         bruteforce(BIT_BOUND_END)
