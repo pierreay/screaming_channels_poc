@@ -867,7 +867,7 @@ def rank():
     try:
         from python_hel import hel
     except Exception as e:
-        l.LOGGER.error("Can't import HEL and perform key ranking!")
+        ll.LOGGER.error("Can't import HEL and perform key ranking!")
         return
     
     print("")
