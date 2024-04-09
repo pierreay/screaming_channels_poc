@@ -1080,7 +1080,6 @@ def attack(variable, pois_algo, num_pois, poi_spacing, template_dir,
     if BRUTEFORCE and not found:
         bruteforce(BIT_BOUND_END)
 
-# PROG: To implement.
 # NOTE: Copied from attack() above.
 @cli.command()
 @click.option("--variable", default="hw_sbox_out", show_default=True,
