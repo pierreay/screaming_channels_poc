@@ -827,9 +827,9 @@ def run_attack(attack_algo, average_bytes, num_pois, pooled_cov, variable, retmo
 
         if average_bytes:
             PROFILE_MEANS_AVG = np.average(PROFILE_MEANS, axis=0)
+        maxcpa = [[0] * 256] * NUM_KEY_BYTES
         for bnum in range(0, NUM_KEY_BYTES):
             cpaoutput = [0]*256
-            maxcpa = [0]*256
             print("Subkey %2d"%bnum)
             for kguess in range(256):
                 
@@ -844,16 +844,16 @@ def run_attack(attack_algo, average_bytes, num_pois, pooled_cov, variable, retmo
                 
                 # Combine POIs as proposed in 
                 # https://pastel.archives-ouvertes.fr/pastel-00850528/document
-                maxcpa[kguess] = 1
+                maxcpa[bnum][kguess] = 1
                 for i in range(num_pois):
                     r,p = pearsonr(leaks[:, i], TRACES_REDUCED[bnum][:, i])
-                    maxcpa[kguess] *= r
+                    maxcpa[bnum][kguess] *= r
 
                 LOG_PROBA[bnum][kguess] = r
     
-            bestguess[bnum] = np.argmax(maxcpa)
+            bestguess[bnum] = np.argmax(maxcpa[bnum])
     
-            cparefs[bnum] = np.argsort(maxcpa)[::-1]
+            cparefs[bnum] = np.argsort(maxcpa[bnum])[::-1]
     
             #Find PGE
             pge[bnum] = list(cparefs[bnum]).index(KEYS[0][bnum])
@@ -870,7 +870,7 @@ def run_attack(attack_algo, average_bytes, num_pois, pooled_cov, variable, retmo
     if retmore is False:
         return (bestguess == known).all()
     else:
-        return np.array(cparefs)
+        return np.array(maxcpa)
 
 # Wrapper to compute AES
 def aes(pt, key):
@@ -1158,13 +1158,15 @@ def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
 
         return cparefs
 
-    cparefs = {"amp": None, "phr": None, "recombined": None}
+    maxcpa = {"amp": None, "phr": None, "recombined": None}
 
     comp = "amp"
-    cparefs[comp] = attack_comp(comp, template_dir.format(comp), variable, pois_algo, num_pois,
+    maxcpa[comp] = attack_comp(comp, template_dir.format(comp), variable, pois_algo, num_pois,
                                 poi_spacing, attack_algo, k_fold, average_bytes,
                                 pooled_cov, window, align, fs)
     rank()
+    # PROG: Continue implementation.
+    import ipdb; ipdb.set_trace()
 
     comp = "phr"
     cparefs[comp] = attack_comp(comp, template_dir.format(comp), variable, pois_algo, num_pois,
