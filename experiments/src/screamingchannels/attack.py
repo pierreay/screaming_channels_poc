@@ -1111,9 +1111,11 @@ def attack(variable, pois_algo, num_pois, poi_spacing, template_dir,
 @click.option("--align/--no-align", default=False, show_default=True,
              help="Align the attack traces with the profile before to attack.")
 @click.option("--fs", default=0, type=float, show_default=True,
-             help="Sampling rate used when aligning traces")
+             help="Sampling rate used when aligning traces.")
+@click.option("--corr-method", default="add", type=str, show_default=True,
+             help="Correlation recombination method [add | mul].")
 def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
-           attack_algo, k_fold, average_bytes, pooled_cov, window, align, fs):
+                      attack_algo, k_fold, average_bytes, pooled_cov, window, align, fs, corr_method):
     global TRACES, PROFILE_MEAN_TRACE, DATAPATH, COMP, FIXED_KEY, PLAINTEXTS, KEYS, LOG_PROBA
 
     def attack_comp(comp, template_dir, variable, pois_algo, num_pois,
@@ -1179,7 +1181,7 @@ def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
                                 pooled_cov, window, align, fs)
     rank()
 
-    print("comp=recombined_corr")
+    print("comp=recombined_corr ; corr_method={}".format(corr_method))
 
     bestguess = [0] * 16
     pge = [256] * 16
@@ -1190,7 +1192,12 @@ def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
             # NOTE: Combination of correlation coefficient from 2 channels
             # (amplitude and phase rotation) inspired from POI recombination
             # but using addition instead of multiplication.
-            maxcpa["recombined"][bnum][kguess] = maxcpa["amp"][bnum][kguess] + maxcpa["phr"][bnum][kguess]
+            if corr_method == "add":
+                maxcpa["recombined"][bnum][kguess] = maxcpa["amp"][bnum][kguess] + maxcpa["phr"][bnum][kguess]
+            elif corr_method == "mul":
+                maxcpa["recombined"][bnum][kguess] = maxcpa["amp"][bnum][kguess] * maxcpa["phr"][bnum][kguess]
+            else:
+                raise Exception("Invalid corr-method option!")
             LOG_PROBA[bnum][kguess] = np.copy(maxcpa["recombined"][bnum][kguess])
         bestguess[bnum] = np.argmax(maxcpa["recombined"][bnum])
         cparefs[bnum] = np.argsort(maxcpa["recombined"][bnum])[::-1]
