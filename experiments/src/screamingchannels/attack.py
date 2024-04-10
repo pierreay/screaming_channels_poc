@@ -198,27 +198,29 @@ sbox=(
 def intermediate(pt, keyguess):
     return sbox[pt ^ keyguess]
 
+# NOTE: Set "flush=True" for all "print()" calls in this function, otherwise,
+# the result using grep and tee in bash script is unreliable.
 def print_result(bestguess,knownkey,pge):
     # Hamming distance between all known subkeys and best guess subkeys.
     hd = [utils.hamd(g, k) for g, k in zip(bestguess, knownkey)]
 
-    print("Best Key Guess: ", end=' ')
+    print("Best Key Guess: ", end=' ', flush=True)
     for b in bestguess: print(" %02x "%b, end=' ')
     print("")
     
-    print("Known Key:      ", end=' ')
+    print("Known Key:      ", end=' ', flush=True)
     for b in knownkey: print(" %02x "%b, end=' ')
     print("")
     
-    print("PGE:            ", end=' ')
+    print("PGE:            ", end=' ', flush=True)
     for b in pge: print("%03d "%b, end=' ')
     print("")
 
-    print("HD:             ", end=' ')
+    print("HD:             ", end=' ', flush=True)
     for hd_i in hd: print("%03d "% hd_i, end=' ')
     print("")
 
-    print("SUCCESS:        ", end=' ')
+    print("SUCCESS:        ", end=' ', flush=True)
     tot = 0
     for g,r in list(zip(bestguess,knownkey)):
         if(g==r):
@@ -227,8 +229,8 @@ def print_result(bestguess,knownkey,pge):
         else:
             print("  0 ", end=' ')
     print("")
-    print("NUMBER OF CORRECT BYTES: %d"%tot)
-    print("HD SUM:                  %d"%np.sum(hd))
+    print("NUMBER OF CORRECT BYTES: %d"%tot, flush=True)
+    print("HD SUM:                  %d"%np.sum(hd), flush=True)
 
 ### CHES20 UTILS ###
 
