@@ -1162,10 +1162,10 @@ def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
             find_pois(pois_algo, num_pois, k_fold, poi_spacing)
 
         reduce_traces(num_pois, window)
-        cparefs = run_attack(attack_algo, average_bytes, num_pois, pooled_cov,
+        maxcpa = run_attack(attack_algo, average_bytes, num_pois, pooled_cov,
                            variable, retmore=True)
 
-        return cparefs
+        return maxcpa
 
     maxcpa = {"amp": None, "phr": None, "recombined": None}
 
