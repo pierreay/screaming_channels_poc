@@ -759,8 +759,10 @@ def load_profile(template_dir):
 def run_attack(attack_algo, average_bytes, num_pois, pooled_cov, variable, retmore=False):
     # global PROFILE_MEANS, PROFILE_COVS, POIS
     global LOG_PROBA
- 
-    LOG_PROBA = [[0 for r in range(256)] for bnum in range(NUM_KEY_BYTES)]
+
+    # NOTE: Use np.ndarray to fix memory address misusage.
+    # NOTE: Use np.float64 required by HEL (otherwise, segfault).
+    LOG_PROBA = np.empty((NUM_KEY_BYTES, 256), dtype=np.float64)
 
     scores = []
     bestguess = [0]*16
@@ -827,7 +829,10 @@ def run_attack(attack_algo, average_bytes, num_pois, pooled_cov, variable, retmo
 
         if average_bytes:
             PROFILE_MEANS_AVG = np.average(PROFILE_MEANS, axis=0)
-        maxcpa = [[0] * 256] * NUM_KEY_BYTES
+
+        # NOTE: Use np.ndarray to fix memory address misusage.
+        # NOTE: Use np.float64 required by HEL (otherwise, segfault).
+        maxcpa = np.empty((NUM_KEY_BYTES, 256), dtype=np.float64)
         for bnum in range(0, NUM_KEY_BYTES):
             cpaoutput = [0]*256
             print("Subkey %2d"%bnum)
@@ -870,7 +875,7 @@ def run_attack(attack_algo, average_bytes, num_pois, pooled_cov, variable, retmo
     if retmore is False:
         return (bestguess == known).all()
     else:
-        return np.array(maxcpa)
+        return maxcpa
 
 # Wrapper to compute AES
 def aes(pt, key):
@@ -1107,7 +1112,7 @@ def attack(variable, pois_algo, num_pois, poi_spacing, template_dir,
              help="Sampling rate used when aligning traces")
 def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
            attack_algo, k_fold, average_bytes, pooled_cov, window, align, fs):
-    global TRACES, PROFILE_MEAN_TRACE, DATAPATH, COMP, FIXED_KEY, PLAINTEXTS, KEYS
+    global TRACES, PROFILE_MEAN_TRACE, DATAPATH, COMP, FIXED_KEY, PLAINTEXTS, KEYS, LOG_PROBA
 
     def attack_comp(comp, template_dir, variable, pois_algo, num_pois,
                     poi_spacing, attack_algo, k_fold,
@@ -1165,36 +1170,33 @@ def attack_recombined(variable, pois_algo, num_pois, poi_spacing, template_dir,
                                 poi_spacing, attack_algo, k_fold, average_bytes,
                                 pooled_cov, window, align, fs)
     rank()
-    # PROG: Continue implementation.
-    import ipdb; ipdb.set_trace()
 
     comp = "phr"
-    cparefs[comp] = attack_comp(comp, template_dir.format(comp), variable, pois_algo, num_pois,
+    maxcpa[comp] = attack_comp(comp, template_dir.format(comp), variable, pois_algo, num_pois,
                                 poi_spacing, attack_algo, k_fold, average_bytes,
                                 pooled_cov, window, align, fs)
     rank()
 
     print("comp=recombined_corr")
-    def recombine_corr(amp, phr):
-        pass
 
-    cparefs["recombined"] = np.empty_like(cparefs["amp"])
-    for byte_index in range(NUM_KEY_BYTES):
-        for pge_index in range(pow(2, 8)):
-            cparefs["recombined"][byte_index][pge_index] = recombine_corr(cparefs["amp"][byte_index][pge_index],
-                                                                          cparefs["phr"][byte_index][pge_index])
-
-    bestguess = [0]*16
-    pge = [256]*16
+    bestguess = [0] * 16
+    pge = [256] * 16
+    cparefs = [None] * NUM_KEY_BYTES
+    maxcpa["recombined"] = np.empty_like(maxcpa["amp"])
     for bnum in range(0, NUM_KEY_BYTES):
-        bestguess[bnum] = cparefs["recombined"][bnum][0]
         for kguess in range(256):
-            try:
-                pge[bnum] = list(cparefs["recombined"][bnum]).index(KEYS[0][bnum])
-            except Exception as e:
-                pge[bnum] = 255
+            # NOTE: Combination of correlation coefficient from 2 channels
+            # (amplitude and phase rotation) inspired from POI recombination
+            # but using addition instead of multiplication.
+            maxcpa["recombined"][bnum][kguess] = maxcpa["amp"][bnum][kguess] + maxcpa["phr"][bnum][kguess]
+            LOG_PROBA[bnum][kguess] = np.copy(maxcpa["recombined"][bnum][kguess])
+        bestguess[bnum] = np.argmax(maxcpa["recombined"][bnum])
+        cparefs[bnum] = np.argsort(maxcpa["recombined"][bnum])[::-1]
+        pge[bnum] = list(cparefs[bnum]).index(KEYS[0][bnum])
     known = KEYS[0]
+
     print_result(bestguess, known, pge)
+    rank()
 
     if BRUTEFORCE and not found:
         bruteforce(BIT_BOUND_END)
