@@ -851,10 +851,10 @@ def run_attack(attack_algo, average_bytes, num_pois, pooled_cov, variable, retmo
                 
                 # Combine POIs as proposed in 
                 # https://pastel.archives-ouvertes.fr/pastel-00850528/document
-                maxcpa[bnum][kguess] = 1
+                maxcpa[bnum][kguess] = 0
                 for i in range(num_pois):
                     r,p = pearsonr(leaks[:, i], TRACES_REDUCED[bnum][:, i])
-                    maxcpa[bnum][kguess] *= r
+                    maxcpa[bnum][kguess] += r
 
                 LOG_PROBA[bnum][kguess] = maxcpa[bnum][kguess]
     
