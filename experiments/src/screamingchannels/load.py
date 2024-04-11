@@ -67,7 +67,7 @@ def generic_load(data_path,name,number,wstart=0,wend=0, average=True,
         )
 
         if np.shape(raw_traces) == () or not raw_traces.any():
-            # print "empty trace", empty
+            print("WARN: Empty trace: #{}".format(i))
             empty += 1
             continue
 
@@ -105,7 +105,7 @@ def generic_load(data_path,name,number,wstart=0,wend=0, average=True,
                     keys.append(k[0])
                 else:
                     keys.append(k[i])
-    
+    print("INFO: Number of empty traces: {}".format(empty))
     traces = np.asarray(traces)
 
     # Apply z-score normalization on the set
