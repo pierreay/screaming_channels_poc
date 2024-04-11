@@ -856,7 +856,7 @@ def run_attack(attack_algo, average_bytes, num_pois, pooled_cov, variable, retmo
                     r,p = pearsonr(leaks[:, i], TRACES_REDUCED[bnum][:, i])
                     maxcpa[bnum][kguess] *= r
 
-                LOG_PROBA[bnum][kguess] = r
+                LOG_PROBA[bnum][kguess] = maxcpa[bnum][kguess]
     
             bestguess[bnum] = np.argmax(maxcpa[bnum])
     
