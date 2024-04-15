@@ -291,10 +291,10 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
         if plot or savePlot:
             plot_results(config, data_amp, trigger, trigger_avg, trace_starts, traces_amp, target_path, plot, savePlot, "amp")
             plot_results(config, data_phr, trigger, trigger_avg, trace_starts, traces_phr, target_path, plot, savePlot, "phr")
-            plot_results(config, data_i, trigger, trigger_avg, trace_starts, traces_i, target_path, plot, savePlot, "i")
-            plot_results(config, data_q, trigger, trigger_avg, trace_starts, traces_q, target_path, plot, savePlot, "q")
-            plot_results(config, data_i_augmented, trigger, trigger_avg, trace_starts, traces_i_augmented, target_path, plot, savePlot, "i_augmented")
-            plot_results(config, data_q_augmented, trigger, trigger_avg, trace_starts, traces_q_augmented, target_path, plot, savePlot, "q_augmented")
+            # plot_results(config, data_i, trigger, trigger_avg, trace_starts, traces_i, target_path, plot, savePlot, "i")
+            # plot_results(config, data_q, trigger, trigger_avg, trace_starts, traces_q, target_path, plot, savePlot, "q")
+            # plot_results(config, data_i_augmented, trigger, trigger_avg, trace_starts, traces_i_augmented, target_path, plot, savePlot, "i_augmented")
+            # plot_results(config, data_q_augmented, trigger, trigger_avg, trace_starts, traces_q_augmented, target_path, plot, savePlot, "q_augmented")
 
         std = np.std(traces_amp,axis=0)
 
