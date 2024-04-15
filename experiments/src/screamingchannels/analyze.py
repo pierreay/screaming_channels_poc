@@ -122,8 +122,8 @@ def find_starts(config, data, target_path, index):
     trigger_signal = trigger_fn(trigger, average)[start_idx:]
     starts = np.where((trigger_signal[1:] != trigger_signal[:-1])
                       * trigger_signal[1:])[0] + start_idx + offset + 1
-    if trigger_signal[0]:
-        starts = np.insert(starts, 0, start_idx + offset)
+    # if trigger_signal[0]:
+    #     starts = np.insert(starts, 0, start_idx + offset)
 
     #TOM ADDITION START
     #plt.clf()
