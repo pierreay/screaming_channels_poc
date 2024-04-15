@@ -538,8 +538,8 @@ def collect(config, target_path, name, average_out, plot, plot_out, max_power, r
                 np.save(os.path.join(target_path,"phr_%s_%d.npy"%(name,index)),trace_phr)
                 np.save(os.path.join(target_path,"i_%s_%d.npy"%(name,index)),trace_i)
                 np.save(os.path.join(target_path,"q_%s_%d.npy"%(name,index)),trace_q)
-                np.save(os.path.join(target_path,"i_augmented_%s_%d.npy"%(name,index)),trace_i_augmented)
-                np.save(os.path.join(target_path,"q_augmented_%s_%d.npy"%(name,index)),trace_q_augmented)
+                # np.save(os.path.join(target_path,"i_augmented_%s_%d.npy"%(name,index)),trace_i_augmented)
+                # np.save(os.path.join(target_path,"q_augmented_%s_%d.npy"%(name,index)),trace_q_augmented)
                 if raw:
                     save_raw(OUTFILE, target_path, index, name)
 
