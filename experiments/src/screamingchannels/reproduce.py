@@ -16,6 +16,7 @@ import zmq
 import subprocess
 
 import numpy as np
+from matplotlib import pyplot as plt
 
 from . import analyze
 
@@ -216,7 +217,6 @@ def _plot_outfile():
     """
     Plot the recorded data.
     """
-    from matplotlib import pyplot as plt
     import scipy
 
     with open(OUTFILE) as f:
@@ -493,9 +493,10 @@ def collect(config, target_path, name, average_out, plot, plot_out, max_power, r
             
         # with click.progressbar(plaintexts) as bar:
             # for index, plaintext in enumerate(bar):
+        index = 0
         with click.progressbar(list(range(num_points)), label="Collecting") as bar:
             # for index, plaintext in enumerate(bar):
-            for index in bar:
+            while index < num_points:
                 if firmware_mode.have_keys and not firmware_config.fixed_key:
                     _send_key(ser, keys[index])
 
@@ -526,11 +527,16 @@ def collect(config, target_path, name, average_out, plot, plot_out, max_power, r
                         ser.write(firmware_mode.action_command.encode()) # single action
 
                 time.sleep(0.09)
-                # Wait the end of the recording.
-                radio.record_stop()
-                # Save on-disk and reinit the radio for future recording.
-                radio.accept()
-                radio.save()
+                try:
+                    # Wait the end of the recording.
+                    radio.record_stop()
+                    # Save on-disk and reinit the radio for future recording.
+                    radio.accept()
+                    radio.save()
+                except Exception as e:
+                    print("ERROR: From radio client: {}".format(e))
+                    print("INFO: Restart current recording...")
+                    continue
 
                 trace_amp, trace_phr, trace_i, trace_q, trace_i_augmented, trace_q_augmented = analyze.extract(OUTFILE, collection_config, average_out, plot, target_path, saveplot, index)
 
@@ -545,6 +551,10 @@ def collect(config, target_path, name, average_out, plot, plot_out, max_power, r
                 # np.save(os.path.join(target_path,"q_augmented_%s_%d.npy"%(name,index)),trace_q_augmented)
                 if raw:
                     save_raw(OUTFILE, target_path, index, name)
+
+                # Update index and click progress bar.
+                index += 1
+                bar.update(1)
 
         ser.write(b'q')     # quit tiny_aes mode
         print((ser.readline()))
