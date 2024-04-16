@@ -144,7 +144,7 @@ def find_starts(config, data, target_path, index):
 # The code below contains a few hacks to deal with all possible errors we
 # encountered with different radios and setups. It is not very clean but it is
 # quite stable.
-def extract(capture_file, config, average_file_name=None, plot=False, target_path=None, savePlot=False, index=0):
+def extract(capture_file, config, average_file_name=None, plot=False, target_path=None, savePlot=False, index=0, return_zero=True):
     """Post-process a GNUradio capture to get a clean and well-aligned trace.
 
     The configuration is a reproduce.AnalysisConfig tuple. The optional
@@ -155,169 +155,176 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
     traces.
 
     """
-    try:
-        # Load data from custom dtype.
-        data = soapysdr.MySoapySDR.numpy_load(capture_file)
+    # Load data from custom dtype.
+    data = soapysdr.MySoapySDR.numpy_load(capture_file)
 
-        # assert len(data) != 0, "ERROR, empty data just after measuring"
-        if len(data) == 0:
-            print("Warning! empty data, replacing with zeros")
-            template = np.load(config.template_name)
-            return np.zeros(len(template)), np.zeros(len(template))
-    
-        #TOM ADDITION START
-        #plt.clf()
-        #plt.plot(data)
-        #plt.savefig(target_path+"/"+str(index)+"_1-data.png")
-        #TOM ADDITION END
-        # plt.plot(data)
-        # plt.show()
-
-        template = np.load(config.template_name) if config.template_name else None
-        
-        if template is not None and len(template) != int(
-                config.signal_length * config.sampling_rate):
-            print("WARNING: Template length doesn't match collection parameters. "
-                  "Is this the right template?")
-
-        # cut usless transient
-        data = data[int(config.drop_start * config.sampling_rate):]
-
-
-        #TOM ADDITION START
-        #plt.clf()
-        #plt.plot(data)
-        #plt.savefig(target_path+"/"+str(index)+"_2-data-trimmed.png")
-        #TOM ADDITION END
-
-        # assert len(data) != 0, "ERROR, empty data after drop_start"
-        if len(data) == 0:
-           print("Warning! empty data after drop start, replacing with zeros")
-           template = np.load(config.template_name)
-           return np.zeros(len(template)), np.zeros(len(template))
-
-   
-        # polar discriminator
-        # fdemod = data[1:] * np.conj(data[:-1])
-        # fdemod = np.angle(fdemod)
-        # plt.plot(fdemod)
-        # plt.show()
-        # return fdemod
-        # data = fdemod
-
-        # AMPlitude
-        data_amp = np.absolute(data)
-        # PHase Rotation
-        data_phr = complex.get_phase_rot(data)
-        # I
-        data_i = np.real(data)
-        # Q
-        data_q = np.imag(data)
-
-        # Compute augmented I/Q.
-        data_augmented = data_amp * np.exp(1j * data_phr)
-        # I from augmented IQ.
-        data_i_augmented = np.real(data_augmented)
-        # Q from augmented IQ.
-        data_q_augmented = np.imag(data_augmented)
-
-        #TOM ADDITION START
-        #plt.clf()
-        #plt.plot(data)
-        #plt.savefig(target_path+"/"+str(index)+"_3-data-absolute.png")
-        #TOM ADDITION END
-        #
-        # extract/aling trace with trigger frequency + autocorrelation
-        #
-        # NOTE: find_starts() will work with the amplitude, but we will use the
-        # starts indexes against the raw I/Q.
-        trace_starts, trigger, trigger_avg = find_starts(config, data_amp, target_path, index)
-        
-        # extract at trigger + autocorrelate with the first to align
-        traces_amp = []
-        traces_phr = []
-        traces_i = []
-        traces_q = []
-        traces_i_augmented = []
-        traces_q_augmented = []
-        trace_length = int(config.signal_length * config.sampling_rate)
-        for start in trace_starts:
-            if len(traces_amp) >= min(config.num_traces_per_point, config.num_traces_per_point_keep):
-                break
-
-            stop = start + trace_length
-
-            if stop > len(data_amp):
-                break
-
-            trace_amp = data_amp[start:stop]
-            if template is None or len(template) == 0:
-                template = trace_amp
-                continue
-
-            trace_lpf = butter_lowpass_filter(trace_amp, config.sampling_rate / 4,
-                    config.sampling_rate)
-            template_lpf = butter_lowpass_filter(template, config.sampling_rate / 4,
-                    config.sampling_rate)
-            correlation = signal.correlate(trace_lpf**2, template_lpf**2)
-            print("corr={}".format(max(correlation)))
-            if max(correlation) <= config.min_correlation:
-                print("Skip trace start because corr={} <= corr_min={}".format(max(correlation), config.min_correlation))
-                continue
-
-            shift = np.argmax(correlation) - (len(template)-1)
-            traces_amp.append(data_amp[start+shift:stop+shift])
-            traces_phr.append(data_phr[start+shift:stop+shift])
-            traces_i.append(data_i[start+shift:stop+shift])
-            traces_q.append(data_q[start+shift:stop+shift])
-            traces_i_augmented.append(data_i_augmented[start+shift:stop+shift])
-            traces_q_augmented.append(data_q_augmented[start+shift:stop+shift])
-
-        avg_amp = np.average(traces_amp, axis=0)
-        avg_phr = np.average(traces_phr, axis=0)
-        avg_i = np.average(traces_i, axis=0)
-        avg_q = np.average(traces_q, axis=0)
-        avg_i_augmented = np.average(traces_i_augmented, axis=0)
-        avg_q_augmented = np.average(traces_q_augmented, axis=0)
-
-        if (np.shape(avg_amp) == () or np.shape(avg_phr) == ()
-            or np.shape(avg_i) == () or np.shape(avg_q) == ()
-            or np.shape(avg_i_augmented) == () or np.shape(avg_q_augmented) == ()):
-            return np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template))
-
-        if average_file_name:
-            np.save(average_file_name, avg_amp)
-
-        if plot or savePlot:
-            plot_results(config, data_amp, trigger, trigger_avg, trace_starts, traces_amp, target_path, plot, savePlot, "amp")
-            plot_results(config, data_phr, trigger, trigger_avg, trace_starts, traces_phr, target_path, plot, savePlot, "phr")
-            # plot_results(config, data_i, trigger, trigger_avg, trace_starts, traces_i, target_path, plot, savePlot, "i")
-            # plot_results(config, data_q, trigger, trigger_avg, trace_starts, traces_q, target_path, plot, savePlot, "q")
-            # plot_results(config, data_i_augmented, trigger, trigger_avg, trace_starts, traces_i_augmented, target_path, plot, savePlot, "i_augmented")
-            # plot_results(config, data_q_augmented, trigger, trigger_avg, trace_starts, traces_q_augmented, target_path, plot, savePlot, "q_augmented")
-
-        std = np.std(traces_amp,axis=0)
-
-        print("Extracted ")
-        print("Number = ",len(traces_amp))
-        print("avg[Max(std)] = %.2E"%avg_amp[std.argmax()])
-        print("Max(u) = Max(std) = %.2E"%(max(std)))
-        print("Max(u_rel) = %.2E"%(100*max(std)/avg_amp[std.argmax()]),"%")
-
-        # plt.plot(avg, 'r')
-        # plt.plot(template, 'b')
-        # plt.show()
-
-        if config.keep_all:
-            return traces_amp
-        else:
-            return avg_amp, avg_phr, avg_i, avg_q, avg_i_augmented, avg_q_augmented
-
-    except Exception as inst:
-        print(inst)
-        print("Error, returning zeros")
+    # assert len(data) != 0, "ERROR, empty data just after measuring"
+    if len(data) == 0:
+        print("Warning! empty data, replacing with zeros")
         template = np.load(config.template_name)
+        return np.zeros(len(template)), np.zeros(len(template))
+
+    #TOM ADDITION START
+    #plt.clf()
+    #plt.plot(data)
+    #plt.savefig(target_path+"/"+str(index)+"_1-data.png")
+    #TOM ADDITION END
+    # plt.plot(data)
+    # plt.show()
+
+    template = np.load(config.template_name) if config.template_name else None
+
+    if template is not None and len(template) != int(
+            config.signal_length * config.sampling_rate):
+        print("WARNING: Template length doesn't match collection parameters. "
+              "Is this the right template?")
+
+    # cut usless transient
+    data = data[int(config.drop_start * config.sampling_rate):]
+
+
+    #TOM ADDITION START
+    #plt.clf()
+    #plt.plot(data)
+    #plt.savefig(target_path+"/"+str(index)+"_2-data-trimmed.png")
+    #TOM ADDITION END
+
+    # assert len(data) != 0, "ERROR, empty data after drop_start"
+    if len(data) == 0:
+       print("Warning! empty data after drop start, replacing with zeros")
+       template = np.load(config.template_name)
+       return np.zeros(len(template)), np.zeros(len(template))
+
+
+    # polar discriminator
+    # fdemod = data[1:] * np.conj(data[:-1])
+    # fdemod = np.angle(fdemod)
+    # plt.plot(fdemod)
+    # plt.show()
+    # return fdemod
+    # data = fdemod
+
+    # AMPlitude
+    data_amp = np.absolute(data)
+    # PHase Rotation
+    data_phr = complex.get_phase_rot(data)
+    # I
+    data_i = np.real(data)
+    # Q
+    data_q = np.imag(data)
+
+    # Compute augmented I/Q.
+    data_augmented = data_amp * np.exp(1j * data_phr)
+    # I from augmented IQ.
+    data_i_augmented = np.real(data_augmented)
+    # Q from augmented IQ.
+    data_q_augmented = np.imag(data_augmented)
+
+    #TOM ADDITION START
+    #plt.clf()
+    #plt.plot(data)
+    #plt.savefig(target_path+"/"+str(index)+"_3-data-absolute.png")
+    #TOM ADDITION END
+    #
+    # extract/aling trace with trigger frequency + autocorrelation
+    #
+    # NOTE: find_starts() will work with the amplitude, but we will use the
+    # starts indexes against the raw I/Q.
+    trace_starts, trigger, trigger_avg = find_starts(config, data_amp, target_path, index)
+
+    # extract at trigger + autocorrelate with the first to align
+    traces_amp = []
+    traces_phr = []
+    traces_i = []
+    traces_q = []
+    traces_i_augmented = []
+    traces_q_augmented = []
+    trace_length = int(config.signal_length * config.sampling_rate)
+    for start_idx, start in enumerate(trace_starts):
+        if len(traces_amp) >= min(config.num_traces_per_point, config.num_traces_per_point_keep):
+            break
+
+        stop = start + trace_length
+
+        if stop > len(data_amp):
+            break
+
+        trace_amp = data_amp[start:stop]
+        if template is None or len(template) == 0:
+            template = trace_amp
+            continue
+
+        trace_lpf = butter_lowpass_filter(trace_amp, config.sampling_rate / 4,
+                config.sampling_rate)
+        template_lpf = butter_lowpass_filter(template, config.sampling_rate / 4,
+                config.sampling_rate)
+        correlation = signal.correlate(trace_lpf**2, template_lpf**2)
+        print("corr={}".format(max(correlation)))
+        if max(correlation) <= config.min_correlation:
+            print("Skip trace start because corr={} <= corr_min={}".format(max(correlation), config.min_correlation))
+            continue
+
+        shift = np.argmax(correlation) - (len(template)-1)
+        traces_amp.append(data_amp[start+shift:stop+shift])
+        traces_phr.append(data_phr[start+shift:stop+shift])
+        traces_i.append(data_i[start+shift:stop+shift])
+        traces_q.append(data_q[start+shift:stop+shift])
+        traces_i_augmented.append(data_i_augmented[start+shift:stop+shift])
+        traces_q_augmented.append(data_q_augmented[start+shift:stop+shift])
+
+    avg_amp = np.average(traces_amp, axis=0)
+    avg_phr = np.average(traces_phr, axis=0)
+    avg_i = np.average(traces_i, axis=0)
+    avg_q = np.average(traces_q, axis=0)
+    avg_i_augmented = np.average(traces_i_augmented, axis=0)
+    avg_q_augmented = np.average(traces_q_augmented, axis=0)
+
+    if return_zero is True and (
+            (np.shape(avg_amp) == () or np.shape(avg_phr) == ()
+             or np.shape(avg_i) == () or np.shape(avg_q) == ()
+             or np.shape(avg_i_augmented) == () or np.shape(avg_q_augmented) == ())
+    ):
         return np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template))
+    elif return_zero is False and (
+            (np.shape(avg_amp) == () or np.shape(avg_phr) == ()
+             or np.shape(avg_i) == () or np.shape(avg_q) == ()
+             or np.shape(avg_i_augmented) == () or np.shape(avg_q_augmented) == ())
+    ):
+        raise Exception("Trigger or correlation configuration excluded all starts!")
+
+    if average_file_name:
+        np.save(average_file_name, avg_amp)
+
+    if plot or savePlot:
+        plot_results(config, data_amp, trigger, trigger_avg, trace_starts, traces_amp, target_path, plot, savePlot, "amp")
+        plot_results(config, data_phr, trigger, trigger_avg, trace_starts, traces_phr, target_path, plot, savePlot, "phr")
+        # plot_results(config, data_i, trigger, trigger_avg, trace_starts, traces_i, target_path, plot, savePlot, "i")
+        # plot_results(config, data_q, trigger, trigger_avg, trace_starts, traces_q, target_path, plot, savePlot, "q")
+        # plot_results(config, data_i_augmented, trigger, trigger_avg, trace_starts, traces_i_augmented, target_path, plot, savePlot, "i_augmented")
+        # plot_results(config, data_q_augmented, trigger, trigger_avg, trace_starts, traces_q_augmented, target_path, plot, savePlot, "q_augmented")
+
+    std = np.std(traces_amp,axis=0)
+
+    print("Extracted ")
+    print("Number = ",len(traces_amp))
+    print("avg[Max(std)] = %.2E"%avg_amp[std.argmax()])
+    print("Max(u) = Max(std) = %.2E"%(max(std)))
+    print("Max(u_rel) = %.2E"%(100*max(std)/avg_amp[std.argmax()]),"%")
+
+    # plt.plot(avg, 'r')
+    # plt.plot(template, 'b')
+    # plt.show()
+
+    if config.keep_all:
+        return traces_amp
+    else:
+        return avg_amp, avg_phr, avg_i, avg_q, avg_i_augmented, avg_q_augmented
+
+    # except Exception as inst:
+    #     print(inst)
+    #     print("Error, returning zeros")
+    #     template = np.load(config.template_name)
+    #     return np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template)), np.zeros(len(template))
 
 def plot_results(config, data, trigger, trigger_average, starts, traces, target_path=None, plot=True, savePlot=False, title=""):
     plt.subplot(4, 1, 1)
