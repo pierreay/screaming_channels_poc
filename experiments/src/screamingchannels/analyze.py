@@ -240,6 +240,7 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
     traces_i_augmented = []
     traces_q_augmented = []
     trace_length = int(config.signal_length * config.sampling_rate)
+    print("INFO: Number of starts: {}".format(len(trace_starts)))
     for start_idx, start in enumerate(trace_starts):
         if len(traces_amp) >= min(config.num_traces_per_point, config.num_traces_per_point_keep):
             break
@@ -259,9 +260,9 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
         template_lpf = butter_lowpass_filter(template, config.sampling_rate / 4,
                 config.sampling_rate)
         correlation = signal.correlate(trace_lpf**2, template_lpf**2)
-        print("corr={}".format(max(correlation)))
+        print("INFO: corr={}".format(max(correlation)))
         if max(correlation) <= config.min_correlation:
-            print("Skip trace start because corr={} <= corr_min={}".format(max(correlation), config.min_correlation))
+            print("WARN: Skip trace start: corr={} <= corr_min={}".format(max(correlation), config.min_correlation))
             continue
 
         shift = np.argmax(correlation) - (len(template)-1)
@@ -290,6 +291,9 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
              or np.shape(avg_i) == () or np.shape(avg_q) == ()
              or np.shape(avg_i_augmented) == () or np.shape(avg_q_augmented) == ())
     ):
+        if plot or savePlot:
+            plot_results(config, data_amp, trigger, trigger_avg, trace_starts, traces_amp, target_path, plot, savePlot, "amp")
+            plot_results(config, data_phr, trigger, trigger_avg, trace_starts, traces_phr, target_path, plot, savePlot, "phr")
         raise Exception("Trigger or correlation configuration excluded all starts!")
 
     if average_file_name:
@@ -298,10 +302,6 @@ def extract(capture_file, config, average_file_name=None, plot=False, target_pat
     if plot or savePlot:
         plot_results(config, data_amp, trigger, trigger_avg, trace_starts, traces_amp, target_path, plot, savePlot, "amp")
         plot_results(config, data_phr, trigger, trigger_avg, trace_starts, traces_phr, target_path, plot, savePlot, "phr")
-        # plot_results(config, data_i, trigger, trigger_avg, trace_starts, traces_i, target_path, plot, savePlot, "i")
-        # plot_results(config, data_q, trigger, trigger_avg, trace_starts, traces_q, target_path, plot, savePlot, "q")
-        # plot_results(config, data_i_augmented, trigger, trigger_avg, trace_starts, traces_i_augmented, target_path, plot, savePlot, "i_augmented")
-        # plot_results(config, data_q_augmented, trigger, trigger_avg, trace_starts, traces_q_augmented, target_path, plot, savePlot, "q_augmented")
 
     std = np.std(traces_amp,axis=0)
 
