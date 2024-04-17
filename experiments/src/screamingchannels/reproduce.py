@@ -571,6 +571,8 @@ def collect(config, target_path, name, average_out, plot, plot_out, max_power, r
         # Quit the server.
         radio.quit()
 
+# NOTE: Dirty copy of collect() with small modifications to have a working
+# snr() command allowing me to make radio setup easier.
 @cli.command()
 @click.argument("config", type=click.File())
 @click.argument("target-path", type=click.Path(exists=True, file_okay=False))
@@ -590,14 +592,18 @@ def collect(config, target_path, name, average_out, plot, plot_out, max_power, r
               help="Save the plot of the results of trace collection.")
 @click.option("-p", "--set-power", default=0, show_default=True,
               help="If set, sets the device to a specific power level (overrides --max-power)")
-def collect(config, target_path, name, average_out, plot, plot_out, max_power, raw, saveplot, set_power):
-    """
-    Collect traces for an attack.
+def snr(config, target_path, name, average_out, plot, plot_out, max_power, raw, saveplot, set_power):
+    # Initialize the radio client.
+    radio = soapysdr.MySoapySDRsClient()
 
-    The config is a JSON file containing parameters for trace analysis; see the
-    definitions of FirmwareConfig and CollectionConfig for descriptions of each
-    parameter.
-    """
+    # Measure noise.
+    radio.record_start()
+    time.sleep(1)
+    radio.record_stop()
+    radio.accept()
+    radio.save()
+    noise = soapysdr.MySoapySDR.numpy_load(OUTFILE)
+    
     # NO-OP defaults for mode dependent config options for backwards compatibility
     cfg_dict = json.load(config)
     cfg_dict["firmware"].setdefault('conventional', False)
@@ -740,16 +746,13 @@ def collect(config, target_path, name, average_out, plot, plot_out, max_power, r
             l.debug('Setting masking mode to %d', firmware_config.mask_mode)
             ser.write(('%d\r\n' % firmware_config.mask_mode).encode())
             print((ser.readline()))
-
-        # Initialize the radio client.
-        radio = soapysdr.MySoapySDRsClient()
             
         # with click.progressbar(plaintexts) as bar:
             # for index, plaintext in enumerate(bar):
         index = 0
         with click.progressbar(list(range(num_points)), label="Collecting") as bar:
             # for index, plaintext in enumerate(bar):
-            while index < num_points:
+            while True:
                 if firmware_mode.have_keys and not firmware_config.fixed_key:
                     _send_key(ser, keys[index])
 
@@ -798,21 +801,9 @@ def collect(config, target_path, name, average_out, plot, plot_out, max_power, r
                     print("INFO: Restart current recording...")
                     continue
 
-                np.save(os.path.join(target_path,"amp_%s_%d.npy"%(name,index)),trace_amp)
-                np.save(os.path.join(target_path,"phr_%s_%d.npy"%(name,index)),trace_phr)
-                np.save(os.path.join(target_path,"i_%s_%d.npy"%(name,index)),trace_i)
-                np.save(os.path.join(target_path,"q_%s_%d.npy"%(name,index)),trace_q)
-                if index < 30:
-                    plt.plot(trace_amp); figure = plt.gcf(); figure.set_size_inches(32, 18)
-                    plt.savefig(os.path.join(target_path,"amp_%s_%d.png"%(name,index))); plt.clf()
-                # np.save(os.path.join(target_path,"i_augmented_%s_%d.npy"%(name,index)),trace_i_augmented)
-                # np.save(os.path.join(target_path,"q_augmented_%s_%d.npy"%(name,index)),trace_q_augmented)
-                if raw:
-                    save_raw(OUTFILE, target_path, index, name)
-
-                # Update index and click progress bar.
-                index += 1
-                bar.update(1)
+                trace_amp_avg = np.average(np.abs(trace_amp))
+                noise_avg = np.average(np.abs(noise))
+                print("SNR_db={}".format(10 * np.log10(trace_amp_avg / noise_avg)), flush=True)
 
         ser.write(b'q')     # quit tiny_aes mode
         print((ser.readline()))
