@@ -15,12 +15,13 @@ from Crypto.Cipher import AES
 import zmq
 import subprocess
 
-from gnuradio import blocks, gr, uhd, iio
-import osmosdr
-
 import numpy as np
 
 from . import analyze
+
+import lib.log as ll
+import lib.load as load
+import lib.soapysdr as soapysdr
 
 logging.basicConfig()
 l = logging.getLogger('reproduce')
@@ -97,8 +98,10 @@ CollectionConfig = collections.namedtuple(
         "sampling_rate",
         # How many different plaintext/key combinations to record.
         "num_points",
-        # How many traces to use.
+        # How many traces executed by the firmware.
         "num_traces_per_point",
+        # How many traces to keep from the recording.
+        "num_traces_per_point_keep",
         # Multiplier to account for traces dropped due to signal processing
         "traces_per_point_multiplier",
         # Lower cut-off frequency of the band-pass filter.
@@ -113,6 +116,8 @@ CollectionConfig = collections.namedtuple(
         "trigger_offset",
         # True for triggering on a rising edge, False otherwise.
         "trigger_rising",
+        # Threshold used for triggering instead of average.
+        "trigger_threshold",
         # Length of the signal portion to keep, in seconds, starting at
         # trigger - trigger_offset.
         "signal_length",
@@ -177,7 +182,7 @@ class EnumType(click.Choice):
               help="Name of the antenna to use (USRP: [TX/RX|RX2])")
 @click.option("-l", "--loglevel", default="INFO", show_default=True,
               help="The loglevel to be used ([DEBUG|INFO|WARNING|ERROR|CRITICAL])")
-@click.option("-o", "--outfile", default="/tmp/time", type=click.Path(), show_default=True,
+@click.option("-o", "--outfile", default="/tmp/raw_0_0.npy", type=click.Path(), show_default=True,
               help="The file to write the GNUradio trace to.")
 def cli(device, baudrate, ykush_port, slowmode, radio, radio_address, radio_antenna,
         outfile, loglevel, **kwargs):
@@ -204,6 +209,7 @@ def cli(device, baudrate, ykush_port, slowmode, radio, radio_address, radio_ante
     YKUSH_PORT = ykush_port
 
     l.setLevel(loglevel)
+    ll.set_level(loglevel)
 
 
 def _plot_outfile():
@@ -243,9 +249,9 @@ def _send_parameter(ser, command, param):
 
     l.debug('Waiting check\n')
     x = ser.readline()
-    print ("received: "+x.decode())
+    l.debug ("received: "+x.decode())
     if len(x) == 0:
-        print("nothing received on timeout, ignoring error")
+        l.debug("nothing received on timeout, ignoring error")
         return 
     #check = ''.join(chr(int(word)) for word in x.split(' '))
     # -- create check like this instead for ESP32:
@@ -254,8 +260,8 @@ def _send_parameter(ser, command, param):
     #check = ''.join(chr(int(word)) for word in response)
     param2 = '%s' %  _encode_for_device(param)
     
-    print ("param: "+param2)
-    print ("check: "+x.decode())
+    l.debug ("param: "+param2)
+    l.debug ("check: "+x.decode())
     if x.decode().strip() != param2.strip():
         print(("ERROR\n%s\n%s" % (_encode_for_device(param),
                                  _encode_for_device(x))))
@@ -278,6 +284,7 @@ def save_raw(capture_file, target_path, index, name):
         data = np.fromfile(f, dtype=np.complex64)
     np.save(os.path.join(target_path,"raw_%s_%d.npy"%(name,index)),data)
 
+# NOTE: Quick and dirty copy and modification of collect().
 @cli.command()
 @click.argument("config", type=click.File())
 @click.argument("target-path", type=click.Path(exists=True, file_okay=False))
@@ -293,11 +300,44 @@ def save_raw(capture_file, target_path, index, name):
               help="Set the output power of the device to its maximum.")
 @click.option("--raw/--no-raw", default=False, show_default=True,
               help="Save the raw IQ data.")
-@click.option("--saveplot/--no-saveplot", default=False, show_default=True,
-              help="Plot the results of trace collection.")
+@click.option("--saveplot/--no-saveplot", default=True, show_default=True,
+              help="Save the plot of the results of trace collection.")
 @click.option("-p", "--set-power", default=0, show_default=True,
               help="If set, sets the device to a specific power level (overrides --max-power)")
-def collect(config, target_path, name, average_out, plot, max_power, raw, saveplot, set_power):
+def extract(config, target_path, name, average_out, plot, plot_out, max_power, raw, saveplot, set_power):
+    """Analyze previous collect."""
+    cfg_dict = json.load(config)
+    cfg_dict["collection"].setdefault('traces_per_point_multiplier', 1.2)
+    cfg_dict["collection"].setdefault('hackrf_gain', 0)
+    cfg_dict["collection"].setdefault('hackrf_gain_bb', 44)
+    cfg_dict["collection"].setdefault('hackrf_gain_if', 40)
+    cfg_dict["collection"].setdefault('plutosdr_gain', 64)
+    cfg_dict["collection"].setdefault('usrp_gain', 40)
+    cfg_dict["collection"].setdefault('keep_all', False)
+    cfg_dict["collection"].setdefault('channel', 0)
+    collection_config = CollectionConfig(**cfg_dict["collection"])
+    analyze.extract(OUTFILE, collection_config, average_out, plot, target_path, saveplot, index=0)
+
+@cli.command()
+@click.argument("config", type=click.File())
+@click.argument("target-path", type=click.Path(exists=True, file_okay=False))
+@click.option("--name", default="",
+              help="Identifier for the experiment (obsolete; only for compatibility).")
+@click.option("--average-out", type=click.Path(dir_okay=False),
+              help="File to write the average to (i.e. the template candidate).")
+@click.option("--plot/--no-plot", default=False, show_default=True,
+              help="Plot the results of trace collection.")
+@click.option("--plot-out", type=click.Path(dir_okay=False),
+              help="File to write the plot to (instead of showing it dynamically).")
+@click.option("--max-power/--no-max-power", default=False, show_default=True,
+              help="Set the output power of the device to its maximum.")
+@click.option("--raw/--no-raw", default=False, show_default=True,
+              help="Save the raw IQ data.")
+@click.option("--saveplot/--no-saveplot", default=True, show_default=True,
+              help="Save the plot of the results of trace collection.")
+@click.option("-p", "--set-power", default=0, show_default=True,
+              help="If set, sets the device to a specific power level (overrides --max-power)")
+def collect(config, target_path, name, average_out, plot, plot_out, max_power, raw, saveplot, set_power):
     """
     Collect traces for an attack.
 
@@ -448,19 +488,12 @@ def collect(config, target_path, name, average_out, plot, max_power, raw, savepl
             ser.write(('%d\r\n' % firmware_config.mask_mode).encode())
             print((ser.readline()))
 
-
-        l.debug('Starting GNUradio')
-        gnuradio = GNUradio(collection_config.target_freq,
-                            collection_config.sampling_rate,
-                            firmware_config.conventional,
-                            collection_config.usrp_gain,
-                            collection_config.hackrf_gain,
-                            collection_config.hackrf_gain_if,
-                            collection_config.hackrf_gain_bb,
-                            collection_config.plutosdr_gain)
+        # Initialize the radio client.
+        radio = soapysdr.MySoapySDRsClient()
+            
         # with click.progressbar(plaintexts) as bar:
             # for index, plaintext in enumerate(bar):
-        with click.progressbar(list(range(num_points))) as bar:
+        with click.progressbar(list(range(num_points)), label="Collecting") as bar:
             # for index, plaintext in enumerate(bar):
             for index in bar:
                 if firmware_mode.have_keys and not firmware_config.fixed_key:
@@ -472,7 +505,10 @@ def collect(config, target_path, name, average_out, plot, max_power, raw, savepl
                     else:
                         _send_plaintext(ser, plaintexts[index])
 
-                gnuradio.start()
+                print("Start instrumentation #{}...".format(index))
+
+                # Start non-blocking recording for a pre-configured duration.
+                radio.record_start()
                 time.sleep(0.03)
 
                 if RADIO == Radio.USRP_B210_MIMO or RADIO == Radio.USRP_B210:
@@ -490,178 +526,32 @@ def collect(config, target_path, name, average_out, plot, max_power, raw, savepl
                         ser.write(firmware_mode.action_command.encode()) # single action
 
                 time.sleep(0.09)
-                gnuradio.stop()
-                gnuradio.wait()
+                # Wait the end of the recording.
+                radio.record_stop()
+                # Save on-disk and reinit the radio for future recording.
+                radio.accept()
+                radio.save()
 
-                trace = analyze.extract(OUTFILE, collection_config, average_out, plot, target_path, saveplot, index)
-                
-                if RADIO == Radio.USRP_B210_MIMO:
-                    trace_2 = analyze.extract(OUTFILE+"_2", collection_config, average_out, plot)
-                
-                    np.save(os.path.join(target_path,"avg_%s_ch1_%d.npy"%(name,index)),np.average(trace,
-                        axis=0))
-                    np.save(os.path.join(target_path,"avg_%s_ch2_%d.npy"%(name,index)),np.average(trace_2,
-                        axis=0))
-                
-                    # from matplotlib import pyplot as plt
-                    for i in range(min(len(trace), len(trace_2))):
-                        t1 = trace[i]
-                        t2 = trace_2[i]
-                        if np.shape(t1) == () or np.shape(t2) == ():
-                            t1 = 0
-                            t2 = 0
-                        trace_2[i] = t1 + t2
-                        t1 = t1 * np.average(t1) / np.std(t1)
-                        t2 = t2 * np.average(t2) / np.std(t2)
-                        trace[i] = t1 + t2
-                        # plt.plot(trace[i])
-                    # plt.plot(np.average(trace, axis=0), 'g')
-                    # plt.plot(np.average(trace_2, axis=0), 'r')
-                    # plt.show()
-                    
-                    # trace_3 = np.add(trace, trace_2)
+                trace_amp, trace_phr, trace_i, trace_q, trace_i_augmented, trace_q_augmented = analyze.extract(OUTFILE, collection_config, average_out, plot, target_path, saveplot, index)
 
-                if RADIO == Radio.USRP_B210_MIMO:
-                    np.save(os.path.join(target_path,"avg_%s_mr_%d.npy"%(name,index)),np.average(trace,
-                        axis=0))
-                    np.save(os.path.join(target_path,"avg_%s_eg_%d.npy"%(name,index)),np.average(trace_2,
-                        axis=0))
-                    if raw:
-                        save_raw(OUTFILE, target_path, index, name+"_ch1")
-                        save_raw(OUTFILE+"_2", target_path, index, name+"_ch2")
-                else:
-                    np.save(os.path.join(target_path,"avg_%s_%d.npy"%(name,index)),trace)
-                    if raw:
-                        save_raw(OUTFILE, target_path, index, name)
-                gnuradio.reset_trace()
+                np.save(os.path.join(target_path,"amp_%s_%d.npy"%(name,index)),trace_amp)
+                np.save(os.path.join(target_path,"phr_%s_%d.npy"%(name,index)),trace_phr)
+                np.save(os.path.join(target_path,"i_%s_%d.npy"%(name,index)),trace_i)
+                np.save(os.path.join(target_path,"q_%s_%d.npy"%(name,index)),trace_q)
+                np.save(os.path.join(target_path,"i_augmented_%s_%d.npy"%(name,index)),trace_i_augmented)
+                np.save(os.path.join(target_path,"q_augmented_%s_%d.npy"%(name,index)),trace_q_augmented)
+                if raw:
+                    save_raw(OUTFILE, target_path, index, name)
 
         ser.write(b'q')     # quit tiny_aes mode
         print((ser.readline()))
         ser.write(b'e')     # turn off continuous wave
-        
+
         time.sleep(1)
         ser.close()
 
-@cli.command()
-@click.argument("config", type=click.File())
-@click.argument("target-path", type=click.Path(exists=True, file_okay=False))
-@click.option("--name", default="",
-              help="Identifier for the experiment (obsolete; only for compatibility).")
-@click.option("--average-out", type=click.Path(dir_okay=False),
-              help="File to write the average to (i.e. the template candidate).")
-@click.option("--plot/--no-plot", default=False, show_default=True,
-              help="Plot the results of trace collection.")
-@click.option("--max-power/--no-max-power", default=False, show_default=True,
-              help="Set the output power of the device to its maximum.")
-def eddystone_unlock_collect(config, target_path, name, average_out, plot, max_power):
-    """
-    Collect traces for an attack on Eddystone unlock.
-
-    The config is a JSON file containing parameters for trace analysis; see the
-    definitions of FirmwareConfig and CollectionConfig for descriptions of each
-    parameter.
-
-    This function runs ./src/screamingchannels/eddystone.py with Python3
-    """
-    # NO-OP defaults for mode dependent config options for backwards compatibility
-    cfg_dict = json.load(config)
-    cfg_dict["firmware"].setdefault('conventional', False)
-    cfg_dict["firmware"].setdefault('mask_mode', 0)
-    cfg_dict["firmware"].setdefault('slow_mode_sleep_time', 0.001)
-    cfg_dict["firmware"].setdefault('fixed_vs_fixed', False)
-    cfg_dict["firmware"].setdefault('fixed_plaintext', False)
-    cfg_dict["collection"].setdefault('traces_per_point_multiplier', 1.2)
-    cfg_dict["collection"].setdefault('hackrf_gain', 0)
-    cfg_dict["collection"].setdefault('hackrf_gain_bb', 44)
-    cfg_dict["collection"].setdefault('hackrf_gain_if', 40)
-    cfg_dict["collection"].setdefault('plutosdr_gain', 64)
-    cfg_dict["collection"].setdefault('usrp_gain', 40)
-    cfg_dict["collection"].setdefault('keep_all', False)
-    cfg_dict["collection"].setdefault('channel', 0)
-
-    collection_config = CollectionConfig(**cfg_dict["collection"])
-    firmware_config = FirmwareConfig(**cfg_dict["firmware"])
-
-    # Note: 
-    # Start a Python3 process dealing with BLE, and synchronize through ZMQ
-    # sockets.
-    # This is not the best solution but it does the job without too many changes
-    # to the rest.
-
-    # server
-    context = zmq.Context()
-    socket = context.socket(zmq.REP)
-    socket.bind("tcp://127.0.0.1:7777")
-
-    # start the ble dongle
-    # TODO: install eddystone in a known path
-    subprocess.Popen(["python3", "./src/screamingchannels/eddystone.py"])
-
-    print((socket.recv()))
-
-    # Simulate the legitimate user:
-    # 1. Generate a random key
-    # 2. Connect to the device, unlock it, and write the new key
-    socket.send(b'set new key')
-    new_key = socket.recv()
-    print(new_key)
-  
-    with open(path.join(target_path, 'key_%s.txt' % name), 'w') as f:
-        f.write(new_key.hex()+"\n")
- 
-    # The attacker:
-    # 1. Connect to the device
-    # 2. Read the unlock characteristic to get the challenge and trigger
-    #    encryptions (with known plaintext) that you collect with gnuradio.
-    socket.send(b'reconnect')
-    print((socket.recv()))
- 
-    # number of points
-    num_points = int(collection_config.num_points)
-
-    l.debug('Starting GNUradio')
-    gnuradio = GNUradio(collection_config.target_freq,
-                        collection_config.sampling_rate,
-                        firmware_config.conventional,
-                        collection_config.usrp_gain,
-                        collection_config.hackrf_gain,
-                        collection_config.hackrf_gain_if,
-                        collection_config.hackrf_gain_bb,
-                        collection_config.plutosdr_gain)
-    plaintexts = []
-    f = open(path.join(target_path, 'pt_%s.txt' % name), 'w')
-    cnt = 0
-    with click.progressbar(list(range(num_points))) as bar:
-        for index in bar:
-            gnuradio.start()
-            time.sleep(0.01)
-
-            if RADIO == Radio.USRP_B210_MIMO or RADIO == Radio.USRP_B210:
-                time.sleep(0.02)
-                # time.sleep(0.01)
-
-            socket.send(b'start')
-            challenge = socket.recv()
-            # print(challenge)
-            
-            time.sleep(0.07)
-            gnuradio.stop()
-            gnuradio.wait()
-
-            trace = analyze.extract(OUTFILE, collection_config, average_out, plot)
- 
-            gnuradio.reset_trace()
-    
-            if trace.any():
-                np.save(os.path.join(target_path,"avg_%s_%d.npy"%(name,cnt)),trace)
-                f.write(challenge.hex()+"\n")
-                cnt += 1
-
-    f.close()
-
-    # Disconnect are set the old default key
-    socket.send(b'quit')
-    socket.recv()
+        # Quit the server.
+        radio.quit()
 
 @cli.command()
 @click.option("--plot/--no-plot", default=False, show_default=True,
@@ -751,99 +641,99 @@ def _open_serial_port():
     l.debug("Opening serial port")
     return serial.Serial(DEVICE, BAUD, timeout=5)
 
+# NOTE: Deprecated because we now use SoapySDR.
+# class GNUradio(gr.top_block):
+#     """GNUradio capture from SDR to file."""
+#     def __init__(self, frequency=2.464e9, sampling_rate=5e6, conventional=False,
+#                  usrp_gain=40, hackrf_gain=0, hackrf_gain_if=40, hackrf_gain_bb=44, plutosdr_gain=35):
+#         gr.top_block.__init__(self, "Top Block")
 
-class GNUradio(gr.top_block):
-    """GNUradio capture from SDR to file."""
-    def __init__(self, frequency=2.464e9, sampling_rate=5e6, conventional=False,
-                 usrp_gain=40, hackrf_gain=0, hackrf_gain_if=40, hackrf_gain_bb=44, plutosdr_gain=35):
-        gr.top_block.__init__(self, "Top Block")
-
-        if RADIO in (Radio.USRP, Radio.USRP_mini, Radio.USRP_B210):
-            radio_block = uhd.usrp_source(
-                ("addr=" + RADIO_ADDRESS.encode("ascii"))
-                if RADIO == Radio.USRP else "",
-                uhd.stream_args(cpu_format="fc32", channels=[0]))
-            radio_block.set_center_freq(frequency)
-            radio_block.set_samp_rate(sampling_rate)
-            radio_block.set_gain(usrp_gain)
-            radio_block.set_antenna(RADIO_ANTENNA.encode("ascii"))
-        elif RADIO == Radio.USRP_B210_MIMO:
-            radio_block = uhd.usrp_source(
-        	",".join(('', "")),
-        	uhd.stream_args(
-        		cpu_format="fc32",
-        		channels=list(range(2)),
-        	),
-            )
-            radio_block.set_samp_rate(sampling_rate)
-            radio_block.set_center_freq(frequency, 0)
-            radio_block.set_gain(usrp_gain, 0)
-            radio_block.set_antenna('RX2', 0)
-            radio_block.set_bandwidth(sampling_rate/2, 0)
-            radio_block.set_center_freq(frequency, 1)
-            radio_block.set_gain(usrp_gain, 1)
-            radio_block.set_antenna('RX2', 1)
-            radio_block.set_bandwidth(sampling_rate/2, 1)
+#         if RADIO in (Radio.USRP, Radio.USRP_mini, Radio.USRP_B210):
+#             radio_block = uhd.usrp_source(
+#                 ("addr=" + RADIO_ADDRESS.encode("ascii"))
+#                 if RADIO == Radio.USRP else "",
+#                 uhd.stream_args(cpu_format="fc32", channels=[0]))
+#             radio_block.set_center_freq(frequency)
+#             radio_block.set_samp_rate(sampling_rate)
+#             radio_block.set_gain(usrp_gain)
+#             radio_block.set_antenna(RADIO_ANTENNA.encode("ascii"))
+#         elif RADIO == Radio.USRP_B210_MIMO:
+#             radio_block = uhd.usrp_source(
+#         	",".join(('', "")),
+#         	uhd.stream_args(
+#         		cpu_format="fc32",
+#         		channels=list(range(2)),
+#         	),
+#             )
+#             radio_block.set_samp_rate(sampling_rate)
+#             radio_block.set_center_freq(frequency, 0)
+#             radio_block.set_gain(usrp_gain, 0)
+#             radio_block.set_antenna('RX2', 0)
+#             radio_block.set_bandwidth(sampling_rate/2, 0)
+#             radio_block.set_center_freq(frequency, 1)
+#             radio_block.set_gain(usrp_gain, 1)
+#             radio_block.set_antenna('RX2', 1)
+#             radio_block.set_bandwidth(sampling_rate/2, 1)
  
-        elif RADIO == Radio.HackRF or RADIO == Radio.bladeRF:
-            mysdr = str(RADIO).split(".")[1].lower() #get "bladerf" or "hackrf"
-            radio_block = osmosdr.source(args="numchan=1 "+mysdr+"=0")
-            radio_block.set_center_freq(frequency, 0)
-            radio_block.set_sample_rate(sampling_rate)
-            # TODO tune parameters
-            radio_block.set_freq_corr(0, 0)
-            radio_block.set_dc_offset_mode(True, 0)
-            radio_block.set_iq_balance_mode(True, 0)
-            radio_block.set_gain_mode(True, 0)
-            radio_block.set_gain(hackrf_gain, 0)
-            if conventional:
-                # radio_block.set_if_gain(27, 0)
-                # radio_block.set_bb_gain(30, 0)
-                radio_block.set_if_gain(25, 0)
-                radio_block.set_bb_gain(27, 0)
-            else:
-                radio_block.set_if_gain(hackrf_gain_if, 0)
-                radio_block.set_bb_gain(hackrf_gain_bb, 0)
-            radio_block.set_antenna('', 0)
-            radio_block.set_bandwidth(3e6, 0)
+#         elif RADIO == Radio.HackRF or RADIO == Radio.bladeRF:
+#             mysdr = str(RADIO).split(".")[1].lower() #get "bladerf" or "hackrf"
+#             radio_block = osmosdr.source(args="numchan=1 "+mysdr+"=0")
+#             radio_block.set_center_freq(frequency, 0)
+#             radio_block.set_sample_rate(sampling_rate)
+#             # TODO tune parameters
+#             radio_block.set_freq_corr(0, 0)
+#             radio_block.set_dc_offset_mode(True, 0)
+#             radio_block.set_iq_balance_mode(True, 0)
+#             radio_block.set_gain_mode(True, 0)
+#             radio_block.set_gain(hackrf_gain, 0)
+#             if conventional:
+#                 # radio_block.set_if_gain(27, 0)
+#                 # radio_block.set_bb_gain(30, 0)
+#                 radio_block.set_if_gain(25, 0)
+#                 radio_block.set_bb_gain(27, 0)
+#             else:
+#                 radio_block.set_if_gain(hackrf_gain_if, 0)
+#                 radio_block.set_bb_gain(hackrf_gain_bb, 0)
+#             radio_block.set_antenna('', 0)
+#             radio_block.set_bandwidth(3e6, 0)
             
-        elif RADIO == Radio.PlutoSDR:
-            bandwidth = 3e6
-            radio_block = iio.pluto_source(RADIO_ADDRESS.encode("ascii"),
-                                           int(frequency), int(sampling_rate),
-                                           1 - 1, int(bandwidth), 0x8000, True,
-                                           True, True, "manual", plutosdr_gain,
-                                           '', True)
-        else:
-            raise Exception("Radio type %s is not supported" % RADIO)
+#         elif RADIO == Radio.PlutoSDR:
+#             bandwidth = 3e6
+#             radio_block = iio.pluto_source(RADIO_ADDRESS.encode("ascii"),
+#                                            int(frequency), int(sampling_rate),
+#                                            1 - 1, int(bandwidth), 0x8000, True,
+#                                            True, True, "manual", plutosdr_gain,
+#                                            '', True)
+#         else:
+#             raise Exception("Radio type %s is not supported" % RADIO)
 
 
-        self._file_sink = blocks.file_sink(gr.sizeof_gr_complex, OUTFILE)
-        print(radio_block)
-        print(self._file_sink)
-        self.connect((radio_block, 0), (self._file_sink, 0))
+#         self._file_sink = blocks.file_sink(gr.sizeof_gr_complex, OUTFILE)
+#         print(radio_block)
+#         print(self._file_sink)
+#         self.connect((radio_block, 0), (self._file_sink, 0))
 
-        if RADIO == Radio.USRP_B210_MIMO:
-            self._file_sink_2 = blocks.file_sink(gr.sizeof_gr_complex,
-            OUTFILE+"_2")
-            self.connect((radio_block, 1), (self._file_sink_2, 0))
+#         if RADIO == Radio.USRP_B210_MIMO:
+#             self._file_sink_2 = blocks.file_sink(gr.sizeof_gr_complex,
+#             OUTFILE+"_2")
+#             self.connect((radio_block, 1), (self._file_sink_2, 0))
 
 
-    def reset_trace(self):
-        """
-        Remove the current trace file and get ready for a new trace.
-        """
-        self._file_sink.open(OUTFILE)
+#     def reset_trace(self):
+#         """
+#         Remove the current trace file and get ready for a new trace.
+#         """
+#         self._file_sink.open(OUTFILE)
         
-        if RADIO == Radio.USRP_B210_MIMO:
-            self._file_sink_2.open(OUTFILE+"_2")
+#         if RADIO == Radio.USRP_B210_MIMO:
+#             self._file_sink_2.open(OUTFILE+"_2")
 
-    def __enter__(self):
-        self.start()
-        return self
+#     def __enter__(self):
+#         self.start()
+#         return self
 
-    def __exit__(self, *args):
-        self.stop()
+#     def __exit__(self, *args):
+#         self.stop()
 
 
 if __name__ == "__main__":

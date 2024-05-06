@@ -2,7 +2,7 @@
     "firmware": {
         "mode": "tinyaes",
         "fixed_key": false,
-        "modulate": true
+        "modulate": false
     },
     "collection": {
         "channel": 0,
@@ -11,16 +11,18 @@
         "hackrf_gain_bb": 39,
         "plutosdr_gain": 35,
         "usrp_gain": 40,
-        "target_freq": 2.528e9,
-        "sampling_rate": 5e6,
+        "target_freq": 2.512e9,
+        "sampling_rate": 8e6,
         "num_points": 1,
-        "num_traces_per_point": 500,
-        "bandpass_lower": 1.85e6,
-        "bandpass_upper": 1.95e6,
-        "lowpass_freq": 5e3,
+        "num_traces_per_point": 300,
+        "num_traces_per_point_keep": 300,
+        "bandpass_lower": 1.93e6,
+        "bandpass_upper": 2.18e6,
+        "lowpass_freq": 3e3,
         "drop_start": 50e-3,
         "trigger_rising": true,
         "trigger_offset": 100e-6,
+        "trigger_threshold": 41e3,
         "signal_length": 300e-6,
         "template_name": null,
         "min_correlation": 0.00

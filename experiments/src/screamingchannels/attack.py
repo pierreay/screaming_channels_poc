@@ -4,17 +4,21 @@ import click
 import numpy as np
 from matplotlib import pyplot as plt
 
+import lib.log as ll
+import lib.load as load
+import lib.analyze as analyze
+
 SMALL_SIZE = 8*4
 MEDIUM_SIZE = 10*4
 BIGGER_SIZE = 12*4
 
-plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
-plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
-plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
-plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
-plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+# plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+# plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+# plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+# plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+# plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+# plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+# plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
 import os
 from os import path
@@ -75,6 +79,7 @@ PROFILE_COVS = None
 PROFILE_STDS = None
 PROFILE_MEAN_TRACE = None
 LOG_PROBA = None
+COMP = None
 
 @click.group()
 @click.option("--data-path", type=click.Path(exists=True, file_okay=False),
@@ -107,8 +112,10 @@ LOG_PROBA = None
               help="Normalize each trace set: traces = (traces-avg(traces))/std(traces).")
 @click.option("--mimo", default="",
               help="Choose ch1, ch2, eg, or mr")
+@click.option("--comp", default="amp",
+              help="Choose component to load (e.g., amplitude is 'amp'")
 def cli(data_path, num_traces, start_point, end_point, plot, save_images, wait, num_key_bytes,
-        bruteforce, bit_bound_end, name, average, norm, norm2, mimo):
+        bruteforce, bit_bound_end, name, average, norm, norm2, mimo, comp):
     """
     Run an attack against previously collected traces.
 
@@ -118,6 +125,7 @@ def cli(data_path, num_traces, start_point, end_point, plot, save_images, wait, 
     """
     global PLOT, WAIT, NUM_KEY_BYTES, BRUTEFORCE, BIT_BOUND_END, PLAINTEXTS, TRACES, KEYFILE, DATAPATH
     global KEYS, FIXED_KEY, SAVE_IMAGES, CIPHERTEXTS
+    global COMP
     SAVE_IMAGES = save_images
     PLOT = plot
     WAIT = wait
@@ -128,9 +136,11 @@ def cli(data_path, num_traces, start_point, end_point, plot, save_images, wait, 
     BIT_BOUND_END = bit_bound_end
     KEYFILE = path.join(data_path, 'key_%s.txt' % name)
     DATAPATH = data_path
+    COMP = comp
     
-    FIXED_KEY, PLAINTEXTS, KEYS, TRACES = generic_load(data_path, name, num_traces,
-            start_point, end_point, average, norm, norm2, mimo)
+    FIXED_KEY, PLAINTEXTS, KEYS, TRACES = generic_load(
+        data_path, name, num_traces, start_point, end_point, average, norm, norm2, mimo, comp=COMP
+    )
     
     CIPHERTEXTS = list(map(aes, PLAINTEXTS, KEYS))
 
@@ -525,11 +535,14 @@ def find_pois(pois_algo, k_fold, num_pois, poi_spacing, template_dir='.'):
             plt.legend(loc='upper right')
  
         plt.legend()
+        if SAVE_IMAGES:
+            # NOTE: Fix savefig() layout.
+            figure = plt.gcf() # Get current figure
+            figure.set_size_inches(32, 18) # Set figure's size manually to your full screen (32x18).
+            plt.savefig(os.path.join(template_dir,'pois.pdf'), bbox_inches='tight', dpi=100)
         if PLOT:
             plt.show()
-        if SAVE_IMAGES:
-            plt.savefig(os.path.join(template_dir,'pois.pdf'))
-            plt.close()
+        plt.clf()
 
 # Once the POIs are known, we can drop all the other points of the traces
 # Optionally, instead of taking the peak only, we can take the average of a
@@ -594,12 +607,14 @@ def build_profile(variable, template_dir='.'):
                              fmt='--o',
                              label="subkey %d"%bnum)
             plt.legend(loc='upper right')
+            if SAVE_IMAGES:
+                # NOTE: Fix savefig() layout.
+                figure = plt.gcf() # Get current figure
+                figure.set_size_inches(32, 18) # Set figure's size manually to your full screen (32x18).
+                plt.savefig(os.path.join(template_dir,'profile_poi_%d.pdf'%i), bbox_inches='tight', dpi=100)
             if PLOT:
                 plt.show()
-            if SAVE_IMAGES:
-                plt.savefig(os.path.join(template_dir,'profile_poi_%d.pdf'%i),
-                        bbox_inches='tight')
-                plt.close()
+            plt.clf()
 
 # Find the best (linear) combination of the bits of the leak variable that fits
 # the measured traces, compare it with the profile estimated for each possible
@@ -846,6 +861,28 @@ def aes(pt, key):
     
     return ct
 
+# Wrapper to call the Histogram Enumeration Library for key-ranking
+def rank():
+    # Perform key ranking only if HEL is installed.
+    try:
+        from python_hel import hel
+    except Exception as e:
+        ll.LOGGER.error("Can't import HEL and perform key ranking!")
+        return
+    
+    print("")
+    print("Starting key ranking using HEL")
+
+    import ctypes
+    from Crypto.Cipher import AES
+
+    known_key = np.array(KEYS[0], dtype=ctypes.c_ubyte).tolist()
+
+    merge = 2
+    bins = 512
+
+    rank_min, rank_rounded, rank_max, time_rank = hel.rank(LOG_PROBA, known_key, merge, bins)
+
 # Wrapper to call the Histogram Enumeration Library for key-enumeration
 def bruteforce(bit_bound_end):
     print("")
@@ -907,8 +944,12 @@ def bruteforce(bit_bound_end):
               help="Minimum number of points between two points of interest.")
 @click.option("--pois-dir", default="", type=click.Path(file_okay=False, writable=True),
               help="Reduce the trace using the POIS in this folder")
+@click.option("--align/--no-align", default=False, show_default=True,
+             help="Align the training traces before computing the profile.")
+@click.option("--fs", default=0, type=float, show_default=True,
+             help="Sampling rate used when aligning traces")
 @click.argument("template_dir", type=click.Path(file_okay=False, writable=True))
-def profile(variable, lr_type, pois_algo, k_fold, num_pois, poi_spacing, pois_dir, template_dir):
+def profile(variable, lr_type, pois_algo, k_fold, num_pois, poi_spacing, pois_dir, align, fs, template_dir):
     """
     Build a template using a chosen technique.
 
@@ -928,6 +969,10 @@ def profile(variable, lr_type, pois_algo, k_fold, num_pois, poi_spacing, pois_di
         # conditions.
         if not path.isdir(template_dir):
             raise
+
+    if align is True:
+        ll.LOGGER.info("Align training traces with themselves...")
+        TRACES = analyze.align_all(TRACES, int(fs), template=TRACES[0], tqdm_log=True)
 
     compute_variables(variable)
     classify()
@@ -958,19 +1003,31 @@ def profile(variable, lr_type, pois_algo, k_fold, num_pois, poi_spacing, pois_di
               help="Pooled covariance for template attacks.")
 @click.option("--window", default=0, show_default=True,
               help="Average poi-window to poi+window samples.")
+@click.option("--align/--no-align", default=False, show_default=True,
+             help="Align the attack traces with the profile before to attack.")
+@click.option("--fs", default=0, type=float, show_default=True,
+             help="Sampling rate used when aligning traces")
 def attack(variable, pois_algo, num_pois, poi_spacing, template_dir,
-        attack_algo, k_fold, average_bytes, pooled_cov, window):
+           attack_algo, k_fold, average_bytes, pooled_cov, window, align, fs):
     """
     Template attack or profiled correlation attack.
 
     The template directory is where we store multiple files comprising the
     template.
     """
+    global TRACES, PROFILE_MEAN_TRACE
     
     if not FIXED_KEY and variable != "hw_p" and variable != "p":
         raise Exception("This set DOES NOT use a FIXED KEY")
  
     load_profile(template_dir)
+
+    if align is True:
+        assert fs > 0
+        ll.LOGGER.info("Align attack traces with themselves...")
+        TRACES = analyze.align_all(TRACES, int(fs), template=TRACES[0], tqdm_log=True)
+        ll.LOGGER.info("Align attack traces with the profile...")
+        TRACES = analyze.align_all(TRACES, int(fs), template=PROFILE_MEAN_TRACE, tqdm_log=True)
     
     if PLOT:
         plt.plot(POIS[:,0], np.average(TRACES, axis=0)[POIS[:,0]], '*')
@@ -991,6 +1048,9 @@ def attack(variable, pois_algo, num_pois, poi_spacing, template_dir,
     reduce_traces(num_pois, window)
     found = run_attack(attack_algo, average_bytes, num_pois, pooled_cov,
             variable)
+
+    # Always rank if HEL is available.
+    rank()
 
     if BRUTEFORCE and not found:
         bruteforce(BIT_BOUND_END)
@@ -1023,7 +1083,7 @@ def tra_create(template_dir, num_pois, poi_spacing):
         if not path.isdir(template_dir):
             raise
 
-    if WAIT:
+    if WAIT :
         print("Loading complete")
         input("Press any key to start\n")
  
@@ -1119,7 +1179,7 @@ def tra_attack(template_dir):
     location of a previously created template with compatible settings (e.g.
     same trace length).
     """
-    if WAIT:
+    if WAIT :
         print("Loading complete")
         input("Press any key to start")
         
@@ -1211,7 +1271,7 @@ def cra():
     global LOG_PROBA
     LOG_PROBA = [[0 for r in range(256)] for bnum in range(NUM_KEY_BYTES)]
     
-    if WAIT:
+    if WAIT :
         print("Loading complete")
         input("Press any key to start")
  

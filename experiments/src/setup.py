@@ -14,28 +14,14 @@ setup(
         ]
     },
     install_requires=[
-        "click==8.1.3",
-        "numpy==1.23.0",
-        "scipy==1.9.1",
-        "pyserial==3.4",
-        "matplotlib==3.5.2",
-        "enum34==1.1.10",
-        "pmt==0.0.4",
-        "pyts==0.12.0",
-        "llvmlite==0.39.1",
-        "numba==0.56.2",
-        "statsmodels==0.13.2",
-        "pandas==1.4.4",
-        "scikit-learn==1.1.2",
-        "future==0.18.2",
-        "pycryptodome==3.15.0",
-        "pyzmq==24.0.0",
-        "peakutils==1.3.4",
-        "tabulate==0.8.10",
-        "kiwisolver==1.4.4",
-        "pyparsing==3.0.9"
-
-
+        "click",
+        "numpy",
+        "scipy",
+        "pyserial",
+        "matplotlib",
+        "statsmodels",
+        "pycryptodome",
+        "scikit-learn"
 # to use system packages
 #        ln -s /usr/lib/python2.7/site-packages/gnuradio ../../../../screaming-channel/nRF52832/experiments/VENV_sc/lib/python2.7/site-packages
 #        "gnuradio",
