@@ -1193,6 +1193,20 @@ void all_off(main_state_t* state)
     }
 }
 
+void print_bits(size_t const size, void const * const ptr)
+{
+    unsigned char *b = (unsigned char*) ptr;
+    unsigned char byte;
+
+    for (int i = size - 1; i >= 0; i--) {
+        for (int j = 7; j >= 0; j--) {
+            byte = (b[i] >> j) & 1;
+            printf("%u", byte);
+        }
+    }
+    puts("");
+}
+
 /** @brief Function for main application entry.
  */
 int main(void)
@@ -1228,6 +1242,23 @@ int main(void)
     NVIC_EnableIRQ(TIMER1_IRQn);
     NVIC_EnableIRQ(CCM_AAR_IRQn);
     __enable_irq();
+
+    while (true)
+    {
+        uint8_t control;
+        scanf("%c", &control);
+        switch (control)
+        {
+            /* Flash state. */
+            case 's':
+                print_bits(sizeof(NRF_NVMC->ICACHECNF), (void *)&(NRF_NVMC->ICACHECNF));
+                printf("\r\n");
+                break;
+            default:
+                break;
+        }
+    }
+    
     while (true)
     {
         uint8_t control;
@@ -1237,7 +1268,7 @@ int main(void)
             case 'a':
                 while (true)
                 {
-                    printf("Enter start channel (two decimal digits, 00 to 80):\r\n");
+                    printf("Enter TEST start channel (two decimal digits, 00 to 80):\r\n");
                     scanf("%d",&channel_start_);
                     if ((channel_start_ <= 80)&&(channel_start_ >= 0))
                     {
