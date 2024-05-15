@@ -1254,10 +1254,10 @@ int main(void)
         {
             /* Check mode. */
             case 'k':
-                printf("NRF_NVMC->ICACHECNF:\r\n")
+                printf("NRF_NVMC->ICACHECNF:\r\n");
                 print_bits(sizeof(NRF_NVMC->ICACHECNF), (void *)&(NRF_NVMC->ICACHECNF));
                 printf("\r\n");
-                printf("NRF_POWER->DCDCEN:\r\n")
+                printf("NRF_POWER->DCDCEN:\r\n");
                 print_bits(sizeof(NRF_POWER->DCDCEN), (void *)&(NRF_POWER->DCDCEN));
                 printf("\r\n");
                 break;
