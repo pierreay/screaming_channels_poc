@@ -1243,6 +1243,9 @@ int main(void)
     NVIC_EnableIRQ(CCM_AAR_IRQn);
     __enable_irq();
 
+    // Disable the DC/DC regulator forcing usage of LDO.
+    NRF_POWER->DCDCEN = POWER_DCDCEN_DCDCEN_Disabled;
+
     while (true)
     {
         uint8_t control;
