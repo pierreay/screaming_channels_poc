@@ -1249,26 +1249,16 @@ int main(void)
         scanf("%c", &control);
         switch (control)
         {
-            /* Flash state. */
-            case 's':
+            /* Check mode. */
+            case 'k':
+                printf("NRF_NVMC->ICACHECNF:\r\n")
                 print_bits(sizeof(NRF_NVMC->ICACHECNF), (void *)&(NRF_NVMC->ICACHECNF));
                 printf("\r\n");
                 break;
-            default:
-                break;
-        }
-    }
-    
-    while (true)
-    {
-        uint8_t control;
-        scanf("%c",&control);
-        switch (control)
-        {
             case 'a':
                 while (true)
                 {
-                    printf("Enter TEST start channel (two decimal digits, 00 to 80):\r\n");
+                    printf("Enter start channel (two decimal digits, 00 to 80):\r\n");
                     scanf("%d",&channel_start_);
                     if ((channel_start_ <= 80)&&(channel_start_ >= 0))
                     {
