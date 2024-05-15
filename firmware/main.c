@@ -1247,7 +1247,7 @@ int main(void)
     NRF_POWER->DCDCEN = POWER_DCDCEN_DCDCEN_Disabled;
 
     // Enable the instruction cache of the flash controller.
-    NRF_NVMC->ICACHECNF = (NVMC_ICACHECNF_CACHEEN_Enabled << NVMC_ICACHECNF_CACHEEN_Pos);
+    NRF_NVMC->ICACHECNF = (NVMC_ICACHECNF_CACHEEN_Disabled << NVMC_ICACHECNF_CACHEEN_Pos);
 
     while (true)
     {
