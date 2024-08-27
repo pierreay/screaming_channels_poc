@@ -3,7 +3,8 @@
 
 * About
 
-Companion repository of the "Screaming Channels on Bluetooth Low Energy" project.
+Companion repository of the "Screaming Channels on Bluetooth Low Energy"
+project.
 
 See the [[https://github.com/pierreay/screaming_channels_ble][screaming_channels_ble]] repository for a complete overview of the
 project.
