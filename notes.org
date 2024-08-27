@@ -1,0 +1,127 @@
+* Install the dependencies for =attack.py=
+
+The attack are reproduced on an Arch Linux system, without Docker, with the
+latest version of the different packages at date of [2023-08-01 mar.].
+
+For a Debian distribution:
+
+#+begin_src tmux
+sudo apt-get install python3-click python3-scipy python3-statsmodels python3-sklearn python3-pycryptodome
+#+end_src
+
+For an Arch Linux installation:
+
+#+begin_src tmux
+sudo pacman -S python-click python-scipy python-statsmodels python-scikit-learn python-pycryptodome
+#+end_src
+
+Or using Pip:
+
+#+begin_src tmux
+pip3 install --break-system-packages click scipy statsmodels scikit-learn pycryptodome
+#+end_src
+
+* Test attacks on the "small sample set"
+
+We will demonstrate the attacks on the "small sample set" of the
+[[https://eurecom-s3.github.io/screaming_channels/][EURECOM-s3.GitHub.io]] page (30 MB).
+
+Either download the dataset:
+
+#+begin_src tmux
+wget -O /tmp/sample_traces.tar.gz https://drive.usercontent.google.com/download?id=1raM1NZGQ65km2BWIu03-y75Gq5FqrdsT&export=download&confirm=t&uuid=92b84cd2-8ada-4126-90e6-c0c1f7779811
+#+end_src
+
+Or use the copy in this repository:
+
+#+begin_src tmux
+cp ./traces/sample_traces.tar.gz /tmp
+#+end_src
+
+Then extract the traces:
+
+#+begin_src tmux
+cd /tmp
+tar xzvf sample_traces.tar.gz
+rm -rf sample_traces.tar.gz
+export TRACES_SAMPLE=/tmp/sample_traces
+cd $TRACES_SAMPLE
+ls
+#+end_src
+
+The template/training set (=hackrf_20cm/attack_tx_500=) is composed of 2000
+traces with a fixed key and a variable plaintext.
+
+The template/training set (=hackrf_20cm/template_tx_500=) is composed of 5000
+traces with a variable key and a variable plaintext.
+
+** CCS18 -- Correlation Radio Attack (CRA)
+
+This is how to launch a CRA, but it will not work on =sample_traces.tar.gz=
+because there is not enough traces.
+
+#+begin_src bash :eval never
+# Plot and adjust points.
+./attack.py --plot --data-path=$data_path --start-point=0 --end-point=0 --num-traces=1000 cra
+# Attack (use fixed key set).
+./attack.py --data-path=$data_path --start-point=0 --end-point=0 cra
+#+end_src
+
+** CHES20 -- Profiled Correlation Attack (PCC)
+:PROPERTIES:
+:ID:       a0d85863-8434-42ca-ac7d-5f28e07ab6b2
+:END:
+
+1. Create a profile:
+   
+   #+begin_src bash :eval never
+   ./attack.py --plot --norm --data-path $TRACES_SAMPLE/hackrf_20cm/template_tx_500/ --start-point 400 --end-point 700 --num-traces 5000 profile /tmp/sample_traces --pois-algo r --num-pois 2 --poi-spacing 1 --variable p_xor_k
+   #+end_src
+
+   The profile will be stored in the =/tmp/sample_traces= directory:
+
+   #+begin_src bash :results output :exports both
+   ls -lh /tmp/sample_traces | grep .npy
+   #+end_src
+
+   #+RESULTS:
+   : -rw-r--r-- 1 drac drac  384  1 août  16:04 POIS.npy
+   : -rw-r--r-- 1 drac drac 129K  1 août  16:04 PROFILE_COVS.npy
+   : -rw-r--r-- 1 drac drac  65K  1 août  16:04 PROFILE_MEANS.npy
+   : -rw-r--r-- 1 drac drac 1,3K  1 août  16:04 PROFILE_MEAN_TRACE.npy
+   : -rw-r--r-- 1 drac drac  38K  1 août  16:04 PROFILE_RS.npy
+   : -rw-r--r-- 1 drac drac  38K  1 août  16:04 PROFILE_RZS.npy
+   : -rw-r--r-- 1 drac drac  65K  1 août  16:04 PROFILE_STDS.npy
+
+2. Attack re-using the profile on only 400 traces:
+   
+   #+begin_src bash :eval never
+   ./attack.py --norm --data-path $TRACES_SAMPLE/hackrf_20cm/attack_tx_500/ --start-point 400 --end-point 700 --num-traces 400 --bruteforce attack /tmp/sample_traces --attack-algo pcc --variable p_xor_k
+   #+end_src
+
+   The attack is quite fast (< 1 minute) and is able to retrieve half of the
+   key with only 400 traces:
+   
+   #+begin_example
+   Best Key Guess:   40   f9   32   50   15   23   51   94   ab   b7   7d   ff   c6   5a   d0   75  
+   Known Key:        40   f9   32   53   15   23   51   96   ab   b7   7c   fe   c4   5b   d1   77  
+   PGE:             000  000  000  001  000  000  000  001  000  000  002  001  001  001  001  002  
+   SUCCESS:           1    1    1    0    1    1    1    0    1    1    0    0    0    0    0    0  
+   NUMBER OF CORRECT BYTES: 8
+   #+end_example
+
+** CHES20 -- Template Attack (PDF)
+:PROPERTIES:
+:ID:       4df90ab7-1e53-4f2e-8cfd-b5d9b7623354
+:END:
+
+First, create a profile just like the [[id:a0d85863-8434-42ca-ac7d-5f28e07ab6b2][CHES20 -- Profiled Correlation Attack
+(PCC)]] attack. Then, we can attack:
+
+#+begin_src bash :eval never
+./attack.py --norm --data-path $TRACES_SAMPLE/hackrf_20cm/attack_tx_500/ --start-point 400 --end-point 700 --num-traces 500 --bruteforce attack /tmp/sample_traces --attack-algo pdf --variable p_xor_k --pooled-cov --num-pois 2
+#+end_src
+
+The attack is longer (~ 5 minutes) but is able to retrieve 3 additional bytes
+of the key compared to the previous one.
+
